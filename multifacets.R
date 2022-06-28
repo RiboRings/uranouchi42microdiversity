@@ -2,6 +2,7 @@ selected_genomes <- top_df$genome
 
 time_series_df1 <- top_df %>%
   select(genome,
+         Tax,
          starts_with("nucdiv_")) %>%
   pivot_longer(starts_with("nucdiv"),
                values_to = "NucDiv",
@@ -10,6 +11,7 @@ time_series_df1 <- top_df %>%
 
 time_series_df2 <- top_df %>%
   select(genome,
+         Tax,
          ends_with("RPKM")) %>%
   pivot_longer(ends_with("RPKM"),
                values_to = "RPKM",
@@ -31,13 +33,13 @@ time_series_df <- time_series_df %>%
   arrange(desc(NucDivRange))
 
 p <- ggplot(time_series_df, aes(x = Sample,
-                                group = genome)) +
+                                group = Tax)) +
   geom_line(aes(y = RPKM), colour = "Black") +
   geom_line(aes(y = NucDiv * 1000), colour = "Dark Gray") +
   scale_y_continuous(name = "RPKM",
                      sec.axis = sec_axis(~./1000,
                                          name = "Nucleotide Diversity")) +
-  facet_wrap(~ NucDivRange * genome,
+  facet_wrap(~ NucDivRange * Tax,
              nrow = 4) +
   theme_bw() +
   theme(axis.title.y = element_text(colour = "Black"),

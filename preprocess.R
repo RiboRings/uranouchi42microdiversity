@@ -10,8 +10,8 @@ library(iterators)
 library(MatrixGenerics)
 library(ggplot2)
 library(ggrepel)
-#library(ggpol)
 library(patchwork)
+library(doParallel)
 
 checkm <- read_csv("data/genomeInfo.csv") %>%
   mutate(genome = gsub(".fa", "", genome))
@@ -34,28 +34,17 @@ gtdbtk <- rbind(ar_gtdbtk, bac_gtdbtk) %>%
              "Species"),
            ";")
 
-diversity_files <- list.files(pattern = '.*UU.*.csv',
+diversity_files <- list.files(pattern = 'UU.*_microdiversity_summary.csv',
                               path = "data")
 
-diversity_list <- lapply(paste0("data/", diversity_files),
-                         read_csv2)
-
-diversity_file_list <- list()
-i <- 1
-
-for (sample_name in diversity_files) {
-  
-  diversity_file_list[[i]] <- read_csv2(paste0("data/", sample_name)) %>%
-    mutate(sample = gsub(".csv", "", sample_name),
-           genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)))
-  
-  i <- i + 1
-  
-}
+diversity_file_list <- mclapply(paste0("data/", diversity_files),
+                                sample_loader,
+                                mc.cores = 3)
 
 micro_df <- merge_all(diversity_file_list) %>%
   na.omit() %>%
   dplyr::rename(nucdiv = nucl_diversity) %>%
+  mutate(sample = gsub("_microdiversity_summary", "", sample)) %>%
   group_by(genome)
 
 diversity_stats <- micro_df %>%

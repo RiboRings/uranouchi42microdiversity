@@ -29,3 +29,13 @@ max_mapper <- function(cur_pos, pattern) {
   return(max_val)
   
 }
+
+sample_loader <- function(sample_name) {
+  
+  sample_df <- read_csv2(sample_name) %>%
+    mutate(sample = gsub(".csv", "", gsub("data/", "", sample_name)),
+           genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)))
+  
+  return(sample_df)
+  
+}
