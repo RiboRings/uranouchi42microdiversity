@@ -1,21 +1,16 @@
-snvs_files <- list.files(pattern = 'UU.*_snvs_summary.csv_short.csv',
-                         path = "data")
+snvs_df <- read_csv("data/snvs.csv")
 
-snvs_file_list <- mclapply(paste0("data/", snvs_files),
-                           sample_loader,
-                           mc.cores = detectCores() - 1)
-
-snvs_df <- snvs_file_list %>%
-  merge_all() %>%
-  filter(genome %in% unique(top_df$genome)) %>%
-  transmute(genome,
+snvs_df <- snvs_df %>%
+  transmute(genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)),
             scaffold,
-            position = as.factor(position),
+            position,
             con_base,
             A, C, T, G,
-            sample = gsub("_snvs_summary.csv_short.csv", "", sample))
+            sample)
 
 for (cur_genome in selected_genomes) {
+  
+  message(paste("analysing genome", cur_genome))
   
   consensus_base_df <- snvs_df %>%
     filter(genome == cur_genome) %>%
@@ -27,7 +22,6 @@ for (cur_genome in selected_genomes) {
                 values_from = con_base,
                 values_fill = NA)
   
-  names(consensus_base_df) <- gsub("(UU\\w)(\\d{6})", "\\2\\1", names(consenus_base_df))
   consensus_base_df <- consensus_base_df[ , order(names(consensus_base_df))]
 
   consensus_base_mat <- consensus_base_df %>%
@@ -41,6 +35,8 @@ for (cur_genome in selected_genomes) {
   count_list <- list()
   
   for (cur_sample in 1:42) {
+    
+    message(paste("computing sample", cur_sample))
     
     sample_mat <- consensus_base_mat[!is.na(consensus_base_mat[ , cur_sample]), ]
     
@@ -56,21 +52,28 @@ for (cur_genome in selected_genomes) {
   
   count_df$Time <- as.factor(rep(seq(1, 42), 42))
   
-  up_lim <- ceiling(max(count_df$Count) / 10000) * 10000
-  down_lim <- floor(min(count_df$Count) / 10000) * 10000
+  count_df <- count_df %>%
+    group_by(RefSample) %>%
+    summarise(Count,
+              Time,
+              Percent = Count / max(Count))
+  
+  message("generating plot 1")
   
   p1 <- ggplot(count_df, aes(x = Time,
-                             y = Count,
+                             y = Percent,
                              colour = RefSample,
                              group = RefSample)) +
     geom_point() +
     geom_line() +
-    scale_y_continuous(limits = c(down_lim, up_lim),
-                       breaks = seq(down_lim, up_lim, by = (up_lim - down_lim) / 5)) +
-    labs(y = "Shared Polymorphic Sites",
+    scale_y_continuous(limits = c(0, 1),
+                       breaks = seq(0, 1, by = 0.1)) +
+    labs(y = "Percent of Shared Polymorphic Sites",
          colour = "Reference Sample") +
     theme_bw() +
     theme(panel.grid = element_blank())
+  
+  message("plot 1 done")
   
   bar_array <- c()
   for (i in 1:nrow(consensus_base_mat)) {
@@ -83,6 +86,8 @@ for (cur_genome in selected_genomes) {
   
   bar_df <- as.data.frame(bar_array)
   
+  message("generating plot 2")
+  
   p2 <- ggplot(bar_df, aes(x = bar_array)) +
     geom_bar(aes(y = (..count..) / sum(..count..))) +
     scale_x_reverse(limits = c(43, 0),
@@ -93,8 +98,12 @@ for (cur_genome in selected_genomes) {
     theme_bw() +
     theme(panel.grid = element_blank())
   
+  message("plot 2 done")
+  
   genome_time_series_df <- time_series_df %>%
     filter(genome == cur_genome)
+  
+    message("generating plot 3")
   
   p3 <- ggplot(genome_time_series_df, aes(x = Sample)) +
     geom_line(aes(y = RPKM), colour = "Black") +
@@ -111,6 +120,8 @@ for (cur_genome in selected_genomes) {
           axis.title.y.right = element_text(colour = "Dark Gray"),
           panel.grid = element_blank())
   
+  message("plot 3 done")
+  
   tax_df <- top_df %>%
     filter(genome == cur_genome) %>%
     transmute(Tax = paste(Phylum, Order, Family, sep = ";"))
@@ -126,5 +137,7 @@ for (cur_genome in selected_genomes) {
          width = 20,
          path = "results",
          device = "pdf")
+  
+  message(paste(cur_genome, "completed"))
   
 }
