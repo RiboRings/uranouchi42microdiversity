@@ -102,23 +102,23 @@ for (cur_genome in selected_genomes) {
   
   genome_time_series_df <- time_series_df %>%
     filter(genome == cur_genome)
+  up_lim <- ceiling(max(genome_time_series_df$RPKM) / 10) * 10
   
     message("generating plot 3")
   
   p3 <- ggplot(genome_time_series_df, aes(x = Sample)) +
     geom_line(aes(y = RPKM), colour = "Black") +
     geom_line(aes(y = NucDiv * 1000), colour = "Dark Gray") +
-    scale_x_continuous(limits = c(1, 42),
-                       breaks = seq(1, 42)) +
+    scale_x_date(date_breaks = "1 month") +
     scale_y_continuous(name = "RPKM",
-                       limits = c(0, 50),
-                       breaks = seq(0, 50, by = 10),
+                       breaks = seq(0, up_lim, by = 10),
                        sec.axis = sec_axis(~./1000,
                                            name = "Nucleotide Diversity")) +
     theme_bw() +
     theme(axis.title.y = element_text(colour = "Black"),
           axis.title.y.right = element_text(colour = "Dark Gray"),
-          panel.grid = element_blank())
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 45, hjust = 1))
   
   message("plot 3 done")
   
