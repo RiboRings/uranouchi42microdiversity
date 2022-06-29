@@ -3,3 +3,5 @@ results/
 .Rhistory
 .RData
 .DS_Store
+stdout.txt
+err.txt

@@ -1,9 +1,9 @@
-snvs_files <- list.files(pattern = 'UU.*_snvs_summary.csv',
+snvs_files <- list.files(pattern = 'UU.*_snvs_summary.csv_short.csv',
                          path = "data")
 
 snvs_file_list <- mclapply(paste0("data/", snvs_files),
                            sample_loader,
-                           mc.cores = 8)
+                           mc.cores = detectCores() - 1)
 
 snvs_df <- snvs_file_list %>%
   merge_all() %>%
@@ -13,7 +13,7 @@ snvs_df <- snvs_file_list %>%
             position = as.factor(position),
             con_base,
             A, C, T, G,
-            sample = gsub("_snvs_summary", "", sample))
+            sample = gsub("_snvs_summary.csv_short.csv", "", sample))
 
 for (cur_genome in selected_genomes) {
   
