@@ -64,6 +64,11 @@ for (cur_genome in selected_genomes) {
               Time,
               Percent = Count / max(Count))
   
+  count_df <- count_df %>%
+    mutate(Time = gsub("UU\\w", "", Time)) %>%
+    mutate(Time = paste(substr(Time, 1, 2), substr(Time, 3, 4), substr(Time, 5, 6), sep = "-")) %>%
+    mutate(Time = as.Date(Time))
+  
   message("generating plot 1")
   
   p1 <- ggplot(count_df, aes(x = Time,
@@ -72,6 +77,7 @@ for (cur_genome in selected_genomes) {
                              group = RefSample)) +
     geom_point() +
     geom_line() +
+    scale_x_date(date_breaks = "1 month") +
     scale_y_continuous(limits = c(0, 1),
                        breaks = seq(0, 1, by = 0.1)) +
     labs(y = "Percent of Shared Polymorphic Sites",
@@ -110,7 +116,7 @@ for (cur_genome in selected_genomes) {
     filter(genome == cur_genome)
   up_lim <- ceiling(max(genome_time_series_df$RPKM) / 10) * 10
   
-    message("generating plot 3")
+  message("generating plot 3")
   
   p3 <- ggplot(genome_time_series_df, aes(x = Sample)) +
     geom_line(aes(y = RPKM), colour = "Black") +
