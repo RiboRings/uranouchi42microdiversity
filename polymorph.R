@@ -1,10 +1,4 @@
 snvs_df <- read_csv("data/snvs.csv")
-#alt1 <- read_csv("data/alt1.csv", col_names = FALSE)
-#names(alt1) <- c("scaffold","position","position_coverage","allele_count","con_base","A","C","T","G","mutation_type","genome","sample")
-#alt2 <- read_csv("data/alt2.csv", col_names = FALSE)
-#names(alt2) <- c("scaffold","position","position_coverage","allele_count","con_base","A","C","T","G","mutation_type","genome","sample")
-#snvs_df <- alt1 %>%
-#  rbind(alt2)
 
 snvs_df <- snvs_df %>%
   transmute(genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)),
@@ -15,8 +9,7 @@ snvs_df <- snvs_df %>%
             sample)
 
 for (cur_genome in selected_genomes) {
-#for (cur_genome in unique(snvs_df$genome)) {
-  
+
   message(paste("analysing genome", cur_genome))
   
   consensus_base_df <- snvs_df %>%
