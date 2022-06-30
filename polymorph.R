@@ -1,4 +1,12 @@
-snvs_df <- read_csv("data/snvs.csv")
+#snvs_df <- read_csv("data/snvs.csv")
+alt1 <- read_csv("data/alt1.csv", col_names = FALSE)
+names(alt1) <- c("scaffold","position","position_coverage","allele_count","con_base","A","C","T","G","mutation_type","genome","sample")
+alt2 <- read_csv("data/alt2.csv", col_names = FALSE)
+names(alt2) <- c("scaffold","position","position_coverage","allele_count","con_base","A","C","T","G","mutation_type","genome","sample")
+
+
+snvs_df <- alt1 %>%
+  rbind(alt2)
 
 snvs_df <- snvs_df %>%
   transmute(genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)),
@@ -8,7 +16,8 @@ snvs_df <- snvs_df %>%
             A, C, T, G,
             sample)
 
-for (cur_genome in selected_genomes) {
+#for (cur_genome in selected_genomes) {
+for (cur_genome in unique(snvs_df$genome)) {
   
   message(paste("analysing genome", cur_genome))
   
@@ -22,8 +31,6 @@ for (cur_genome in selected_genomes) {
                 values_from = con_base,
                 values_fill = NA)
   
-  consensus_base_df <- consensus_base_df[ , order(names(consensus_base_df))]
-
   consensus_base_mat <- consensus_base_df %>%
     mutate(name = paste(scaffold, position, sep = ";")) %>%
     column_to_rownames(var = "name") %>%
@@ -32,9 +39,10 @@ for (cur_genome in selected_genomes) {
            ends_with("UUF")) %>%
     as.matrix()
   
+  consensus_base_mat <- consensus_base_mat[ , order(colnames(consensus_base_mat))]
   count_list <- list()
   
-  for (cur_sample in 1:42) {
+  for (cur_sample in 1:ncol(consensus_base_mat)) {
     
     message(paste("computing sample", cur_sample))
     
@@ -47,10 +55,10 @@ for (cur_genome in selected_genomes) {
   
   count_df <- count_list %>%
     melt() %>%
-    transmute(RefSample = as.factor(L1),
+    transmute(RefSample = colnames(consensus_base_mat)[L1],
               Count = value)
   
-  count_df$Time <- as.factor(rep(seq(1, 42), 42))
+  count_df$Time <- as.factor(rep(colnames(consensus_base_mat), ncol(consensus_base_mat)))
   
   count_df <- count_df %>%
     group_by(RefSample) %>%
@@ -71,7 +79,8 @@ for (cur_genome in selected_genomes) {
     labs(y = "Percent of Shared Polymorphic Sites",
          colour = "Reference Sample") +
     theme_bw() +
-    theme(panel.grid = element_blank())
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid = element_blank())
   
   message("plot 1 done")
   
@@ -89,12 +98,11 @@ for (cur_genome in selected_genomes) {
   message("generating plot 2")
   
   p2 <- ggplot(bar_df, aes(x = bar_array)) +
-    geom_bar(aes(y = (..count..) / sum(..count..))) +
+    geom_bar() +
     scale_x_reverse(limits = c(43, 0),
                     breaks = seq(42, 1, by = -1)) +
-    scale_y_continuous(limits = c(0, 1)) +
     labs(x = "Consensus Base Recurrence",
-         y = "Number of SNVs") +
+         y = "Number of Shared Polymorphic Sites") +
     theme_bw() +
     theme(panel.grid = element_blank())
   
@@ -115,6 +123,7 @@ for (cur_genome in selected_genomes) {
                        sec.axis = sec_axis(~./1000,
                                            name = "Nucleotide Diversity")) +
     theme_bw() +
+    labs(x = "Time") +
     theme(axis.title.y = element_text(colour = "Black"),
           axis.title.y.right = element_text(colour = "Dark Gray"),
           panel.grid = element_blank(),
