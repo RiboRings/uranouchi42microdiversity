@@ -1,5 +1,26 @@
+# import snv data with minimal information on
+# - genome: "UUJ150418_matabat2bin.303.fa"
+# - scaffold
+# - position
+# - con_base: "A" / "C" / "T" / "G"
+# - A, C, T, G: numerical (0 - ∞)
+# - sample: "UUJ150318"
 snvs_df <- read_csv("data/snvs.csv")
 
+#alt1 <- read_csv("data/alt1.csv", col_names = FALSE)
+#alt2 <- read_csv("data/alt2.csv", col_names = FALSE)
+#snvs_df <- rbind(alt1, alt2)
+#names(snvs_df) <- c("scaffold",
+#                    "position",
+#                    "position_coverage",
+#                    "allele_count",
+#                    "con_base",
+#                    "A","C","T","G",
+#                    "mutation_type",
+#                    "genome",
+#                    "sample")
+  
+# select only relevant columns
 snvs_df <- snvs_df %>%
   transmute(genome = gsub("matabat2bin.", "", gsub(".fa", "", genome)),
             scaffold,
@@ -8,10 +29,13 @@ snvs_df <- snvs_df %>%
             A, C, T, G,
             sample)
 
+# iterate over all MAGs of interest
 for (cur_genome in selected_genomes) {
 
   message(paste("analysing genome", cur_genome))
   
+  # generate data.frame of the consensus bases
+  # of the current MAG across the samples
   consensus_base_df <- snvs_df %>%
     filter(genome == cur_genome) %>%
     select(scaffold,
@@ -22,6 +46,11 @@ for (cur_genome in selected_genomes) {
                 values_from = con_base,
                 values_fill = NA)
   
+  # generate a matrix of the consensus bases
+  # where each row is an SNV and each column
+  # is a sample, so that  each cell tells you
+  # in sample "x" which consensus base was found
+  # for SNV "y"
   consensus_base_mat <- consensus_base_df %>%
     mutate(name = paste(scaffold, position, sep = ";")) %>%
     column_to_rownames(var = "name") %>%
@@ -62,11 +91,22 @@ for (cur_genome in selected_genomes) {
     mutate(Time = paste(substr(Time, 1, 2), substr(Time, 3, 4), substr(Time, 5, 6), sep = "-")) %>%
     mutate(Time = as.Date(Time))
   
+  winter <- substr(count_df$Time, 6, 7) %in% c("12", "01", "02")
+  summer <- substr(count_df$Time, 6, 7) %in% c("06", "07", "08")
+  spring <- substr(count_df$Time, 6, 7) %in% c("03", "04", "05")
+  autumn <- substr(count_df$Time, 6, 7) %in% c("09", "10", "11")
+  
+  count_df$Season <- ""
+  count_df$Season[winter] <- "Winter"
+  count_df$Season[summer] <- "Summer"
+  count_df$Season[spring] <- "Spring"
+  count_df$Season[autumn] <- "Autumn"
+  
   message("generating plot 1")
   
   p1 <- ggplot(count_df, aes(x = Time,
                              y = Percent,
-                             colour = RefSample,
+                             colour = Season,
                              group = RefSample)) +
     geom_point() +
     geom_line() +
