@@ -7,18 +7,20 @@
 # - sample: "UUJ150318"
 snvs_df <- read_csv("data/snvs.csv")
 
-#alt1 <- read_csv("data/alt1.csv", col_names = FALSE)
-#alt2 <- read_csv("data/alt2.csv", col_names = FALSE)
+#snvs_df <- read_csv("data/alt1.csv", col_names = FALSE)
+#snvs_df <- read_csv("data/alt2.csv", col_names = FALSE)
+#snvs_df <- read_csv("data/dioamico.csv", col_names = FALSE)
 #snvs_df <- rbind(alt1, alt2)
-#names(snvs_df) <- c("scaffold",
-#                    "position",
-#                    "position_coverage",
-#                    "allele_count",
-#                    "con_base",
-#                    "A","C","T","G",
-#                    "mutation_type",
-#                    "genome",
-#                    "sample")
+
+names(snvs_df) <- c("scaffold",
+                    "position",
+                    "position_coverage",
+                    "allele_count",
+                    "con_base",
+                    "A","C","T","G",
+                    "mutation_type",
+                    "genome",
+                    "sample")
   
 # select only relevant columns
 snvs_df <- snvs_df %>%
@@ -33,6 +35,14 @@ snvs_df <- snvs_df %>%
 for (cur_genome in selected_genomes) {
 
   message(paste("analysing genome", cur_genome))
+  
+  # skip MAGs that appear in less than 2 samples
+  if (length(unique(snvs_df$sample)) < 2) {
+    
+    message(paste("skipping", cur_genome))
+    next
+    
+  }
   
   # generate data.frame of the consensus bases
   # of the current MAG across the samples
@@ -59,9 +69,14 @@ for (cur_genome in selected_genomes) {
            ends_with("UUF")) %>%
     as.matrix()
   
+  # sort columns so that samples are in
+  # chronological order
   consensus_base_mat <- consensus_base_mat[ , order(colnames(consensus_base_mat))]
   count_list <- list()
   
+  # compute number of shared polymorphic sites
+  # each iteration taking a specific sample
+  # as reference and comparing it to all the others
   for (cur_sample in 1:ncol(consensus_base_mat)) {
     
     message(paste("computing sample", cur_sample))
@@ -73,34 +88,62 @@ for (cur_genome in selected_genomes) {
     
   }
   
+  # melt counts of shared polymorphic sites
+  # into 2 columns:
+  # - L1 (reference sample identifier)
+  # - value (number of shared polymorphic sites)
   count_df <- count_list %>%
     melt() %>%
     transmute(RefSample = colnames(consensus_base_mat)[L1],
               Count = value)
   
-  count_df$Time <- as.factor(rep(colnames(consensus_base_mat), ncol(consensus_base_mat)))
+  # add column with information on sampling time
+  count_df$ObservedSample <- as.factor(rep(colnames(consensus_base_mat), ncol(consensus_base_mat)))
   
+  # compute percentage of shared polymorphic sites
   count_df <- count_df %>%
     group_by(RefSample) %>%
     summarise(Count,
-              Time,
+              ObservedSample,
               Percent = Count / max(Count))
   
+  # convert time to a date object type
   count_df <- count_df %>%
-    mutate(Time = gsub("UU\\w", "", Time)) %>%
-    mutate(Time = paste(substr(Time, 1, 2), substr(Time, 3, 4), substr(Time, 5, 6), sep = "-")) %>%
-    mutate(Time = as.Date(Time))
+    mutate(Time = gsub("UU\\w", "", ObservedSample)) %>%
+    mutate(Time = as.Date(paste(substr(Time, 1, 2),
+                                substr(Time, 3, 4),
+                                substr(Time, 5, 6),
+                                sep = "-")))
   
-  winter <- substr(count_df$Time, 6, 7) %in% c("12", "01", "02")
-  summer <- substr(count_df$Time, 6, 7) %in% c("06", "07", "08")
-  spring <- substr(count_df$Time, 6, 7) %in% c("03", "04", "05")
-  autumn <- substr(count_df$Time, 6, 7) %in% c("09", "10", "11")
+  # index by season
+  winter17 <- substr(count_df$RefSample, 3, 4) %in% c("12", "01", "02") &
+    substr(count_df$RefSample, 1, 2) == "17"
+  summer17 <- substr(count_df$RefSample, 3, 4) %in% c("06", "07", "08") &
+    substr(count_df$RefSample, 1, 2) == "17"
+  spring17 <- substr(count_df$RefSample, 3, 4) %in% c("03", "04", "05") &
+    substr(count_df$RefSample, 1, 2) == "17"
+  autumn17 <- substr(count_df$RefSample, 3, 4) %in% c("09", "10", "11") &
+    substr(count_df$RefSample, 1, 2) == "17"
+  winter18 <- substr(count_df$RefSample, 3, 4) %in% c("12", "01", "02") &
+    substr(count_df$RefSample, 1, 2) == "18"
+  summer18 <- substr(count_df$RefSample, 3, 4) %in% c("06", "07", "08") &
+    substr(count_df$RefSample, 1, 2) == "18"
+  spring18 <- substr(count_df$RefSample, 3, 4) %in% c("03", "04", "05") &
+    substr(count_df$RefSample, 1, 2) == "18"
+  autumn18 <- substr(count_df$RefSample, 3, 4) %in% c("09", "10", "11") &
+    substr(count_df$RefSample, 1, 2) == "18"
   
+  # store seasonality information into
+  # a new column
   count_df$Season <- ""
-  count_df$Season[winter] <- "Winter"
-  count_df$Season[summer] <- "Summer"
-  count_df$Season[spring] <- "Spring"
-  count_df$Season[autumn] <- "Autumn"
+  count_df$Season[winter17] <- "Winter 2017"
+  count_df$Season[summer17] <- "Summer 2017"
+  count_df$Season[spring17] <- "Spring 2017"
+  count_df$Season[autumn17] <- "Autumn 2017"
+  count_df$Season[winter18] <- "Winter 2018"
+  count_df$Season[summer18] <- "Summer 2018"
+  count_df$Season[spring18] <- "Spring 2018"
+  count_df$Season[autumn18] <- "Autumn 2018"
   
   message("generating plot 1")
   
@@ -183,6 +226,36 @@ for (cur_genome in selected_genomes) {
          width = 20,
          path = "results",
          device = "pdf")
+  
+  count_mat <-  count_df %>%
+    select(-Count, -Time) %>%
+    pivot_wider(values_from = Percent,
+                names_from = ObservedSample) %>%
+    column_to_rownames(var = "RefSample")
+  
+  set.seed(1234)
+  ha <- HeatmapAnnotation(Season = gsub(" 201\\d", "", count_mat$Season),
+                          which = "row")
+  
+  count_mat <- count_mat %>%
+    select(-Season) %>%
+    as.matrix()
+  
+  pdf(paste0("results/polmap", cur_genome, ".pdf"),
+      width = 15,
+      height = 15)
+  
+  draw(Heatmap(count_mat,
+               name = "SPS Percent",
+               heatmap_legend_param = list(at = seq(0, 1, by = 0.2)),
+               cluster_rows = FALSE,
+               cluster_columns = FALSE,
+               row_title = "Reference Sample",
+               column_title = "Observed Sample",
+               column_names_rot = 90,
+               left_annotation = ha))
+  
+  dev.off()
   
   message(paste(cur_genome, "completed"))
   
