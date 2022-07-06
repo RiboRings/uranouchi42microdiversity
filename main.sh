@@ -4,8 +4,8 @@
 #PBS -o stdout.txt
 #PBS -e err.txt
 #PBS -N Rscript
-#PBS -l mem=200gb
-#PBS -l ncpus=15
+#PBS -l mem=100gb
+#PBS -l ncpus=10
 #PBS -l nice=5
 #PBS -m ea
 #PBS -M giuliobene2000@gmail.com

@@ -9,18 +9,18 @@ snvs_df <- read_csv("data/snvs.csv")
 
 #snvs_df <- read_csv("data/alt1.csv", col_names = FALSE)
 #snvs_df <- read_csv("data/alt2.csv", col_names = FALSE)
-snvs_df <- read_csv("data/dioamico.csv", col_names = FALSE)
+#snvs_df <- read_csv("data/dioamico.csv", col_names = FALSE)
 #snvs_df <- rbind(alt1, alt2)
-
-names(snvs_df) <- c("scaffold",
-                    "position",
-                    "position_coverage",
-                    "allele_count",
-                    "con_base",
-                    "A","C","T","G",
-                    "mutation_type",
-                    "genome",
-                    "sample")
+#
+#names(snvs_df) <- c("scaffold",
+#                    "position",
+#                    "position_coverage",
+#                    "allele_count",
+#                    "con_base",
+#                    "A","C","T","G",
+#                    "mutation_type",
+#                    "genome",
+#                    "sample")
   
 # select only relevant columns
 snvs_df <- snvs_df %>%
