@@ -9,7 +9,7 @@ snvs_df <- read_csv("data/snvs.csv")
 
 #snvs_df <- read_csv("data/alt1.csv", col_names = FALSE)
 #snvs_df <- read_csv("data/alt2.csv", col_names = FALSE)
-#snvs_df <- read_csv("data/dioamico.csv", col_names = FALSE)
+snvs_df <- read_csv("data/dioamico.csv", col_names = FALSE)
 #snvs_df <- rbind(alt1, alt2)
 
 names(snvs_df) <- c("scaffold",
@@ -36,8 +36,15 @@ for (cur_genome in selected_genomes) {
 
   message(paste("analysing genome", cur_genome))
   
+  genome_df <- snvs_df %>%
+    filter(genome == cur_genome) %>%
+    select(scaffold,
+           position,
+           con_base,
+           sample)
+  
   # skip MAGs that appear in less than 2 samples
-  if (length(unique(snvs_df$sample)) < 2) {
+  if (length(unique(genome_df$sample)) < 2) {
     
     message(paste("skipping", cur_genome))
     next
@@ -46,12 +53,7 @@ for (cur_genome in selected_genomes) {
   
   # generate data.frame of the consensus bases
   # of the current MAG across the samples
-  consensus_base_df <- snvs_df %>%
-    filter(genome == cur_genome) %>%
-    select(scaffold,
-           position,
-           con_base,
-           sample) %>%
+  consensus_base_df <- genome_df %>%
     pivot_wider(names_from = sample,
                 values_from = con_base,
                 values_fill = NA)
@@ -234,12 +236,30 @@ for (cur_genome in selected_genomes) {
     column_to_rownames(var = "RefSample")
   
   set.seed(1234)
-  ha <- HeatmapAnnotation(Season = gsub(" 201\\d", "", count_mat$Season),
+  row_ha <- HeatmapAnnotation(Season = gsub(" 201\\d", "", count_mat$Season),
                           which = "row")
   
   count_mat <- count_mat %>%
     select(-Season) %>%
     as.matrix()
+  
+  winter <- substr(colnames(count_mat), 3, 4) %in% c("12", "01", "02")
+  summer <- substr(colnames(count_mat), 3, 4) %in% c("06", "07", "08")
+  spring <- substr(colnames(count_mat), 3, 4) %in% c("03", "04", "05")
+  autumn <- substr(colnames(count_mat), 3, 4) %in% c("09", "10", "11")
+  
+  col_an_df <- data.frame(ObservedSample = colnames(count_mat))
+  
+  col_an_df$Season <- ""
+  col_an_df$Season[winter] <- "Winter"
+  col_an_df$Season[summer] <- "Summer"
+  col_an_df$Season[spring] <- "Spring"
+  col_an_df$Season[autumn] <- "Autumn"
+  
+  set.seed(1234)
+  col_ha <- HeatmapAnnotation(Season = col_ha_df$Season,
+                              which = "col",
+                              show_legend = FALSE)
   
   pdf(paste0("results/polmap", cur_genome, ".pdf"),
       width = 15,
@@ -253,7 +273,8 @@ for (cur_genome in selected_genomes) {
                row_title = "Reference Sample",
                column_title = "Observed Sample",
                column_names_rot = 90,
-               left_annotation = ha))
+               left_annotation = ha,
+               bottom_annotation = ha_cols))
   
   dev.off()
   
