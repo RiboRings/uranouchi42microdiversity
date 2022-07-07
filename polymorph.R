@@ -34,14 +34,16 @@ snvs_df <- snvs_df %>%
 # iterate over all MAGs of interest
 for (cur_genome in selected_genomes) {
 
+  message(paste("Analysing genome", cur_genome))
+
   tax_df <- top_df %>%
     filter(genome == cur_genome) %>%
     transmute(Tax = paste(Phylum, Order, Family, sep = ";"))
   
   # report results
   rmarkdown::render("magreport.Rmd",
-                    output_format = "pdf_document",
-                    output_file = paste0("results/", cur_genome, "_report.pdf"))
+                    output_format = "html_document",
+                    output_file = paste0("results/", cur_genome, "_report.html"))
 
 }
   

@@ -1,6 +1,6 @@
 ---
 title: "Dynamics of within-species Variation"
-subtitle: "`paste0('Genome: ', cur_genome, '. Taxonomy: '`"
+subtitle: "`r paste0('Genome: ', cur_genome, '. Taxonomy: ', tax_df$Tax)`"
 author: "Giulio Benedetti"
 date: "`r Sys.Date()`"
 ---
@@ -152,12 +152,6 @@ genome_df <- snvs_df %>%
   count_df$Season[autumn18] <- "Autumn 2018"
 ```
 
-
-```{r}
-message("generating plot 1")
-```
-
-
 ```{r}
 p1 <- ggplot(count_df, aes(x = Time,
                              y = Percent,
@@ -174,12 +168,6 @@ p1 <- ggplot(count_df, aes(x = Time,
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           panel.grid = element_blank())
 ```
-
-
-```{r}
-message("plot 1 done")
-```
-
 
 ```{r }
 bar_array <- c()
@@ -207,18 +195,10 @@ bar_df <- as.data.frame(bar_array)
     theme_bw() +
     theme(panel.grid = element_blank())
   
-  message("plot 2 done")
-  
   genome_time_series_df <- time_series_df %>%
     filter(genome == cur_genome)
   up_lim <- ceiling(max(genome_time_series_df$RPKM) / 10) * 10
 ```
-
-
-```{r}
-message("generating plot 3")
-```
-
 
 ```{r}
 p3 <- ggplot(genome_time_series_df, aes(x = Sample)) +

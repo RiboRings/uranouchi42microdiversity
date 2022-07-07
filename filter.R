@@ -40,15 +40,15 @@ df$AbundRatioSd <- rowSds(rpkm_shift_mat)
 #  labs(x = "Maximum Coverage") +
 #  theme_bw() +
 #  theme(panel.grid = element_blank())
-
+#
 #p3 <- p1 + p2
-
-ggsave("quality_check.pdf",
-       plot = p3,
-       device = "pdf",
-       width = 14,
-       height = 7,
-       path = "results")
+#
+#ggsave("quality_check.pdf",
+#       plot = p3,
+#       device = "pdf",
+#       width = 14,
+#       height = 7,
+#       path = "results")
 
 max_coverage_threshold <- 10
 
