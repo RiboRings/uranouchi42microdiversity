@@ -248,13 +248,13 @@ for (cur_genome in selected_genomes) {
   spring <- substr(colnames(count_mat), 3, 4) %in% c("03", "04", "05")
   autumn <- substr(colnames(count_mat), 3, 4) %in% c("09", "10", "11")
   
-  col_an_df <- data.frame(ObservedSample = colnames(count_mat))
+  col_ha_df <- data.frame(ObservedSample = colnames(count_mat))
   
-  col_an_df$Season <- ""
-  col_an_df$Season[winter] <- "Winter"
-  col_an_df$Season[summer] <- "Summer"
-  col_an_df$Season[spring] <- "Spring"
-  col_an_df$Season[autumn] <- "Autumn"
+  col_ha_df$Season <- ""
+  col_ha_df$Season[winter] <- "Winter"
+  col_ha_df$Season[summer] <- "Summer"
+  col_ha_df$Season[spring] <- "Spring"
+  col_ha_df$Season[autumn] <- "Autumn"
   
   set.seed(1234)
   col_ha <- HeatmapAnnotation(Season = col_ha_df$Season,
@@ -273,8 +273,8 @@ for (cur_genome in selected_genomes) {
                row_title = "Reference Sample",
                column_title = "Observed Sample",
                column_names_rot = 90,
-               left_annotation = ha,
-               bottom_annotation = ha_cols))
+               left_annotation = row_ha,
+               bottom_annotation = col_ha))
   
   dev.off()
   
