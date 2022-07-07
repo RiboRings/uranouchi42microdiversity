@@ -217,18 +217,6 @@ for (cur_genome in selected_genomes) {
     filter(genome == cur_genome) %>%
     transmute(Tax = paste(Phylum, Order, Family, sep = ";"))
   
-  p <- (p2 / p3 | p1) +
-    plot_layout(guides = "collect") +
-    plot_annotation(title = "Dynamics of within-species Variation",
-                    subtitle = paste0("Genome: ", cur_genome, ". Taxonomy: ", tax_df$Tax))
-  
-  ggsave(paste0("polymorph", cur_genome, ".pdf"),
-         plot = p,
-         height = 10,
-         width = 20,
-         path = "results",
-         device = "pdf")
-  
   count_mat <-  count_df %>%
     select(-Count, -Time) %>%
     pivot_wider(values_from = Percent,
@@ -248,23 +236,39 @@ for (cur_genome in selected_genomes) {
   spring <- substr(colnames(count_mat), 3, 4) %in% c("03", "04", "05")
   autumn <- substr(colnames(count_mat), 3, 4) %in% c("09", "10", "11")
   
-  col_ha_df <- data.frame(ObservedSample = colnames(count_mat))
+  col_ha_df_bottom <- data.frame(ObservedSample = colnames(count_mat))
   
-  col_ha_df$Season <- ""
-  col_ha_df$Season[winter] <- "Winter"
-  col_ha_df$Season[summer] <- "Summer"
-  col_ha_df$Season[spring] <- "Spring"
-  col_ha_df$Season[autumn] <- "Autumn"
+  col_ha_df_bottom$Season <- ""
+  col_ha_df_bottom$Season[winter] <- "Winter"
+  col_ha_df_bottom$Season[summer] <- "Summer"
+  col_ha_df_bottom$Season[spring] <- "Spring"
+  col_ha_df_bottom$Season[autumn] <- "Autumn"
   
   set.seed(1234)
-  col_ha <- HeatmapAnnotation(Season = col_ha_df$Season,
-                              which = "col",
-                              show_legend = FALSE)
+  col_ha_bottom <- HeatmapAnnotation(Season = col_ha_df_bottom$Season,
+                                     which = "col",
+                                     show_legend = FALSE)
   
-  pdf(paste0("results/polmap", cur_genome, ".pdf"),
-      width = 15,
-      height = 15)
+  col_ha_top_df <- top_df %>%
+    filter(genome == cur_genome) %>%
+    select(starts_with("coverage")) %>%
+    melt() %>%
+    mutate(variable = gsub("coverage_", "", variable)) %>%
+    filter(variable %in% colnames(count_mat)) %>%
+    arrange(variable)
   
+  col_ha_top <- HeatmapAnnotation(Coverage = anno_lines(col_ha_top_df$value),
+                                  which = "col")
+  
+  pdf(paste0("results/polymorph", cur_genome, ".pdf"),
+      height = 15,
+      width = 15)
+  
+  p2 / p1 / p3 +
+    plot_layout(guides = "collect") +
+    plot_annotation(title = "Dynamics of within-species Variation",
+                    subtitle = paste0("Genome: ", cur_genome, ". Taxonomy: ", tax_df$Tax))
+
   draw(Heatmap(count_mat,
                name = "SPS Percent",
                heatmap_legend_param = list(at = seq(0, 1, by = 0.2)),
@@ -274,10 +278,12 @@ for (cur_genome in selected_genomes) {
                column_title = "Observed Sample",
                column_names_rot = 90,
                left_annotation = row_ha,
-               bottom_annotation = col_ha))
+               bottom_annotation = col_ha_bottom,
+               top_annotation = col_ha_top))
   
   dev.off()
   
   message(paste(cur_genome, "completed"))
   
 }
+  

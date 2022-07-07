@@ -57,9 +57,10 @@ diversity_df <- micro_df %>%
          nucdiv,
          DiSiperMbp,
          NonsynonimousFraction,
+         coverage,
          sample) %>%
   pivot_wider(names_from = sample,
-              values_from = c(nucdiv, DiSiperMbp, NonsynonimousFraction),
+              values_from = c(nucdiv, DiSiperMbp, NonsynonimousFraction, coverage),
               values_fill = 0) %>%
   left_join(diversity_stats)
 
