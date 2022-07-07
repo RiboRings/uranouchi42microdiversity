@@ -1,4 +1,4 @@
-df <- read_csv2("data/mags.csv")
+#df <- read_csv2("data/mags.csv")
 
 mat <- df %>%
   select(ends_with("RPKM")) %>%
@@ -22,26 +22,26 @@ df$AbundRatioMax <- rowMaxs(rpkm_shift_mat)
 df$AbundRatioRange <- rowMaxs(rpkm_shift_mat) - rowMins(rpkm_shift_mat)
 df$AbundRatioSd <- rowSds(rpkm_shift_mat)
 
-p1 <- ggplot(df, aes(x = MaxCov, y = Scaffolds)) +
-  geom_point() +
-  geom_smooth() +
-  scale_x_log10() +
-  scale_y_log10() +
-  labs(x = "Maximum Coverage",
-       y = "Number of Contigs") +
-  theme_bw() +
-  theme(panel.grid = element_blank())
+#p1 <- ggplot(df, aes(x = MaxCov, y = Scaffolds)) +
+#  geom_point() +
+#  geom_smooth() +
+#  scale_x_log10() +
+#  scale_y_log10() +
+#  labs(x = "Maximum Coverage",
+#       y = "Number of Contigs") +
+#  theme_bw() +
+#  theme(panel.grid = element_blank())
+#
+#p2 <- ggplot(df, aes(x = MaxCov, y = N50)) +
+#  geom_point() +
+#  geom_smooth() +
+#  scale_x_log10() +
+#  scale_y_log10() +
+#  labs(x = "Maximum Coverage") +
+#  theme_bw() +
+#  theme(panel.grid = element_blank())
 
-p2 <- ggplot(df, aes(x = MaxCov, y = N50)) +
-  geom_point() +
-  geom_smooth() +
-  scale_x_log10() +
-  scale_y_log10() +
-  labs(x = "Maximum Coverage") +
-  theme_bw() +
-  theme(panel.grid = element_blank())
-
-p3 <- p1 + p2
+#p3 <- p1 + p2
 
 ggsave("quality_check.pdf",
        plot = p3,
