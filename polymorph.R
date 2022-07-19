@@ -31,6 +31,8 @@ snvs_df <- snvs_df %>%
             A, C, T, G,
             sample)
 
+coverage_correction <- FALSE
+
 # iterate over all MAGs of interest
 for (cur_genome in selected_genomes) {
 
@@ -46,4 +48,3 @@ for (cur_genome in selected_genomes) {
                     output_file = paste0("results/", cur_genome, "_report.html"))
 
 }
-  

@@ -12,6 +12,7 @@ library(ggplot2)
 library(ggrepel)
 library(patchwork)
 library(doParallel)
+library(circlize)
 
 checkm <- read_csv("data/genomeInfo.csv") %>%
   mutate(genome = gsub(".fa", "", genome))

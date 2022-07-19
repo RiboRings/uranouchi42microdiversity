@@ -19,7 +19,6 @@ genome_df <- snvs_df %>%
            sample)
 ```
 
-
 ```{r}
 # skip MAGs that appear in less than 2 samples
   if (length(unique(genome_df$sample)) < 2) {
@@ -30,7 +29,6 @@ genome_df <- snvs_df %>%
   }
 ```
 
-
 ```{r consensus_base_df}
 # generate data.frame of the consensus bases
   # of the current MAG across the samples
@@ -39,7 +37,6 @@ genome_df <- snvs_df %>%
                 values_from = con_base,
                 values_fill = NA)
 ```
-
 
 ```{r}
 # generate a matrix of the consensus bases
@@ -56,7 +53,6 @@ genome_df <- snvs_df %>%
     as.matrix()
 ```
 
-
 ```{r}
 # sort columns so that samples are in
   # chronological order
@@ -64,21 +60,47 @@ genome_df <- snvs_df %>%
   count_list <- list()
 ```
 
+```{r}
+cov_df <- top_df %>%
+  filter(genome == cur_genome) %>%
+  select(starts_with("coverage")) %>%
+  melt() %>%
+  mutate(variable = gsub("coverage_", "", variable)) %>%
+  filter(variable %in% colnames(consensus_base_mat)) %>%
+  arrange(variable)
+```
+
+```{r}
+low_coverage_samples <- cov_df$value < 10
+snv_likelyhood <- sapply(iter(consensus_base_mat, by = "row"), function(x) sum(!is.na(x)) / length(x))
+```
+
+```{r}
+if (coverage_correction) {
+  
+  for (i in 1:nrow(consensus_base_mat)) {
+  
+  consensus_base_mat[i, is.na(consensus_base_mat[i, ]) & low_coverage_samples & snv_likelyhood[i] > 0.7]  <- max(consensus_base_mat[i, ], na.rm = TRUE)
+  
+  }
+  
+}
+```
 
 ```{r include = FALSE}
 # compute number of shared polymorphic sites
-  # each iteration taking a specific sample
-  # as reference and comparing it to all the others
-  for (cur_sample in 1:ncol(consensus_base_mat)) {
+# each iteration taking a specific sample
+# as reference and comparing it to all the others
+for (cur_sample in 1:ncol(consensus_base_mat)) {
     
-    message(paste("computing sample", cur_sample))
+  message(paste("computing sample", cur_sample))
     
-    sample_mat <- consensus_base_mat[!is.na(consensus_base_mat[ , cur_sample]), ]
+  sample_mat <- consensus_base_mat[!is.na(consensus_base_mat[ , cur_sample]), ]
+
+  count_list[[cur_sample]] <- sapply(iter(sample_mat, by = "col"),
+                                     function(x) sum(sample_mat[ , cur_sample] == x, na.rm = TRUE))
     
-    count_list[[cur_sample]] <- sapply(iter(sample_mat, by = "col"),
-                                       function(x) sum(sample_mat[ , cur_sample] == x, na.rm = TRUE))
-    
-  }
+}
 ```
 
 ```{r}
@@ -94,28 +116,27 @@ genome_df <- snvs_df %>%
 
 ```{r}
 # add column with information on sampling time
-  count_df$ObservedSample <- as.factor(rep(colnames(consensus_base_mat), ncol(consensus_base_mat)))
+count_df$ObservedSample <- as.factor(rep(colnames(consensus_base_mat), ncol(consensus_base_mat)))
 ```
 
 ```{r}
 # compute percentage of shared polymorphic sites
-  count_df <- count_df %>%
-    group_by(RefSample) %>%
-    summarise(Count,
-              ObservedSample,
-              Percent = Count / max(Count))
+count_df <- count_df %>%
+  group_by(RefSample) %>%
+  summarise(Count,
+            ObservedSample,
+            Percent = Count / max(Count))
 ```
 
 ```{r}
 # convert time to a date object type
-  count_df <- count_df %>%
-    mutate(Time = gsub("UU\\w", "", ObservedSample)) %>%
-    mutate(Time = as.Date(paste(substr(Time, 1, 2),
-                                substr(Time, 3, 4),
-                                substr(Time, 5, 6),
-                                sep = "-")))
+count_df <- count_df %>%
+  mutate(Time = gsub("UU\\w", "", ObservedSample)) %>%
+  mutate(Time = as.Date(paste(substr(Time, 1, 2),
+                              substr(Time, 3, 4),
+                              substr(Time, 5, 6),
+                              sep = "-")))
 ```
-
 
 ```{r}
 # index by season
@@ -137,7 +158,6 @@ genome_df <- snvs_df %>%
     substr(count_df$RefSample, 1, 2) == "18"
 ```
 
-
 ```{r}
 # store seasonality information into
   # a new column
@@ -154,67 +174,66 @@ genome_df <- snvs_df %>%
 
 ```{r}
 p1 <- ggplot(count_df, aes(x = Time,
-                             y = Percent,
-                             colour = Season,
-                             group = RefSample)) +
-    geom_point() +
-    geom_line() +
-    scale_x_date(date_breaks = "1 month") +
-    scale_y_continuous(limits = c(0, 1),
-                       breaks = seq(0, 1, by = 0.1)) +
-    labs(y = "Percent of Shared Polymorphic Sites",
-         colour = "Reference Sample") +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          panel.grid = element_blank())
+                           y = Percent,
+                           colour = Season,
+                           group = RefSample)) +
+  geom_point() +
+  geom_line() +
+  scale_x_date(date_breaks = "1 month") +
+  scale_y_continuous(limits = c(0, 1),
+                     breaks = seq(0, 1, by = 0.1)) +
+  labs(y = "Percent of Shared Polymorphic Sites",
+       colour = "Reference Sample") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid = element_blank())
 ```
 
-```{r }
+```{r compute_recurrence}
 bar_array <- c()
-  for (i in 1:nrow(consensus_base_mat)) {
+for (i in 1:nrow(consensus_base_mat)) {
     
-    opts <- unique(consensus_base_mat[i, ])
-    bar_array <- append(bar_array,
-                        max(sapply(opts, function(x) sum(x == consensus_base_mat[i, ], na.rm = TRUE))))
+  opts <- unique(consensus_base_mat[i, ])
+  bar_array <- append(bar_array,
+                      max(sapply(opts, function(x) sum(x == consensus_base_mat[i, ], na.rm = TRUE))))
     
-  }
+}
 ```
-
 
 ```{r}
 bar_df <- as.data.frame(bar_array)
   
-  message("generating plot 2")
+message("generating plot 2")
   
-  p2 <- ggplot(bar_df, aes(x = bar_array)) +
-    geom_bar() +
-    scale_x_reverse(limits = c(43, 0),
-                    breaks = seq(42, 1, by = -1)) +
-    labs(x = "Consensus Base Recurrence",
-         y = "Number of Shared Polymorphic Sites") +
-    theme_bw() +
-    theme(panel.grid = element_blank())
+p2 <- ggplot(bar_df, aes(x = bar_array)) +
+  geom_bar() +
+  scale_x_reverse(limits = c(43, 0),
+                  breaks = seq(42, 1, by = -1)) +
+  labs(x = "Consensus Base Recurrence",
+       y = "Number of Shared Polymorphic Sites") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
   
-  genome_time_series_df <- time_series_df %>%
-    filter(genome == cur_genome)
-  up_lim <- ceiling(max(genome_time_series_df$RPKM) / 10) * 10
+genome_time_series_df <- time_series_df %>%
+  filter(genome == cur_genome)
+up_lim <- ceiling(max(genome_time_series_df$RPKM) / 10) * 10
 ```
 
 ```{r}
 p3 <- ggplot(genome_time_series_df, aes(x = Sample)) +
-    geom_line(aes(y = RPKM), colour = "Black") +
-    geom_line(aes(y = NucDiv * 1000), colour = "Dark Gray") +
-    scale_x_date(date_breaks = "1 month") +
-    scale_y_continuous(name = "RPKM",
-                       breaks = seq(0, up_lim, by = 10),
-                       sec.axis = sec_axis(~./1000,
-                                           name = "Nucleotide Diversity")) +
-    theme_bw() +
-    labs(x = "Time") +
-    theme(axis.title.y = element_text(colour = "Black"),
-          axis.title.y.right = element_text(colour = "Dark Gray"),
-          panel.grid = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1))
+  geom_line(aes(y = RPKM), colour = "Black") +
+  geom_line(aes(y = NucDiv * 1000), colour = "Dark Gray") +
+  scale_x_date(date_breaks = "1 month") +
+  scale_y_continuous(name = "RPKM",
+                     breaks = seq(0, up_lim, by = 10),
+                     sec.axis = sec_axis(~./1000,
+                                         name = "Nucleotide Diversity")) +
+  theme_bw() +
+  labs(x = "Time") +
+  theme(axis.title.y = element_text(colour = "Black"),
+        axis.title.y.right = element_text(colour = "Dark Gray"),
+        panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ```{r polyline, fig.height = 10, fig.width = 20}
@@ -222,7 +241,6 @@ p <- (p2 / p3 | p1) +
     plot_layout(guides = "collect")
 p
 ```
-
 
 ```{r}
 count_mat <-  count_df %>%
@@ -232,64 +250,71 @@ count_mat <-  count_df %>%
     column_to_rownames(var = "RefSample")
 ```
 
-
 ```{r}
 set.seed(1234)
-  row_ha <- HeatmapAnnotation(Season = gsub(" 201\\d", "", count_mat$Season),
-                          which = "row")
+row_ha <- HeatmapAnnotation(Season = gsub(" 201\\d", "", count_mat$Season),
+                            which = "row")
 ```
-
 
 ```{r}
 count_mat <- count_mat %>%
     select(-Season) %>%
     as.matrix()
   
-  winter <- substr(colnames(count_mat), 3, 4) %in% c("12", "01", "02")
-  summer <- substr(colnames(count_mat), 3, 4) %in% c("06", "07", "08")
-  spring <- substr(colnames(count_mat), 3, 4) %in% c("03", "04", "05")
-  autumn <- substr(colnames(count_mat), 3, 4) %in% c("09", "10", "11")
+winter <- substr(colnames(count_mat), 3, 4) %in% c("12", "01", "02")
+summer <- substr(colnames(count_mat), 3, 4) %in% c("06", "07", "08")
+spring <- substr(colnames(count_mat), 3, 4) %in% c("03", "04", "05")
+autumn <- substr(colnames(count_mat), 3, 4) %in% c("09", "10", "11")
 ```
-
 
 ```{r}
 col_ha_df_bottom <- data.frame(ObservedSample = colnames(count_mat))
   
-  col_ha_df_bottom$Season <- ""
-  col_ha_df_bottom$Season[winter] <- "Winter"
-  col_ha_df_bottom$Season[summer] <- "Summer"
-  col_ha_df_bottom$Season[spring] <- "Spring"
-  col_ha_df_bottom$Season[autumn] <- "Autumn"
+col_ha_df_bottom$Season <- ""
+col_ha_df_bottom$Season[winter] <- "Winter"
+col_ha_df_bottom$Season[summer] <- "Summer"
+col_ha_df_bottom$Season[spring] <- "Spring"
+col_ha_df_bottom$Season[autumn] <- "Autumn"
   
-  set.seed(1234)
-  col_ha_bottom <- HeatmapAnnotation(Season = col_ha_df_bottom$Season,
-                                     which = "col",
-                                     show_legend = FALSE)
+set.seed(1234)
+col_ha_bottom <- HeatmapAnnotation(Season = col_ha_df_bottom$Season,
+                                   which = "col",
+                                   show_legend = FALSE)
+
+col_fun = colorRamp2(c(0, 0.5, 1), c("blue", "white", "red"))
 ```
 
 ```{r}
-col_ha_top_df <- top_df %>%
-    filter(genome == cur_genome) %>%
-    select(starts_with("coverage")) %>%
-    melt() %>%
-    mutate(variable = gsub("coverage_", "", variable)) %>%
-    filter(variable %in% colnames(count_mat)) %>%
-    arrange(variable)
-  
-  col_ha_top <- HeatmapAnnotation(Coverage = anno_lines(col_ha_top_df$value),
-                                  which = "col")
+g_values <- 10 * sapply(1:ncol(consensus_base_mat), function(x) mean(snv_likelyhood[is.na(consensus_base_mat[ , x])]) / cov_df$value[x])
+
+sig_threshold1 <- g_values < 0.05
+sig_threshold2 <- g_values < 0.005
+
+pch <- rep(NA, ncol(consensus_base_mat))
+pch[sig_threshold1] <- "*"
+pch[sig_threshold2] <- "**"
+
+gvalue_col_fun <- colorRamp2(c(0, 1.5, 3), c("green", "white", "red")) 
+col_ha_top <- HeatmapAnnotation(Trust = anno_simple(-log10(g_values), col = gvalue_col_fun, pch = pch))
+lgd_gvalue <- Legend(title = "Trust", col_fun = gvalue_col_fun, at = c(0, 1, 2, 3), 
+    labels = c("1", "0.1", "0.01", "0.001"))
+lgd_sig <- Legend(pch = c("*", "**"), type = "points", labels = c("< 0.05", "< 0.005"))
 ```
 
 ```{r polymap, fig.height = 15, fig.width = 15}
-Heatmap(count_mat,
-        name = "SPS Percent",
-        heatmap_legend_param = list(at = seq(0, 1, by = 0.2)),
-        cluster_rows = FALSE,
-        cluster_columns = FALSE,
-        row_title = "Reference Sample",
-        column_title = "Observed Sample",
-        column_names_rot = 90,
-        left_annotation = row_ha,
-        bottom_annotation = col_ha_bottom,
-        top_annotation = col_ha_top)
+draw(Heatmap(count_mat,
+             name = "SPS Percent",
+             heatmap_legend_param = list(at = seq(0, 1, by = 0.2)),
+             col = col_fun,
+             cluster_rows = FALSE,
+             cluster_columns = FALSE,
+             row_title = "Reference Sample",
+             column_title = "Observed Sample",
+             column_names_rot = 90,
+             left_annotation = row_ha,
+             bottom_annotation = col_ha_bottom,
+             top_annotation = col_ha_top,
+             show_row_names = FALSE,
+             show_column_names = FALSE),
+     annotation_legend_list = list(lgd_gvalue, lgd_sig))
 ```
