@@ -42,21 +42,6 @@ for (cur_genome in selected_genomes) {
     filter(genome == cur_genome) %>%
     transmute(Tax = paste(Phylum, Order, Family, sep = ";"))
   
-  genome_df <- snvs_df %>%
-    filter(genome == cur_genome) %>%
-    select(scaffold,
-           position,
-           con_base,
-           sample)
-  
-  # skip MAGs that appear in less than 2 samples
-  if (length(unique(genome_df$sample)) < 2) {
-    
-    message(paste("skipping", cur_genome))
-    next
-    
-  }
-  
   # report results
   rmarkdown::render("magreport.Rmd",
                     output_format = "html_document",
