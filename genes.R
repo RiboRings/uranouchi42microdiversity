@@ -1,6 +1,6 @@
 func_annot <- read_tsv("data/special_func_annot.gff",
                        col_names = c("pass", "gene", "KO", "thrshld", "score", "Evalue", "Definition"))
-func_cats <- read_tsv("../KEGG_pathway_ko_uniq.txt")
+func_cats <- read_tsv("data/KEGG_pathway_ko_uniq.txt")
 
 func_annot_cats <- func_annot %>%
   left_join(func_cats, by = c("KO" = "ko")) %>%
@@ -50,13 +50,17 @@ func_mat <- func_mat[my_mat_order, ]
 
 rownames(func_mat) <- my_tax
 
+clean_func_mat <- remove_problematic_combs(func_mat)
+write_csv(as.data.frame(clean_func_mat), "data/raw_gene_mat.csv")
+
 fun_color_range <- colorRampPalette(c("#1b98e0", "red"))
 my_colors <- fun_color_range(101)
 col_fun <- colorRamp2(breaks = seq(0, 1, by = 0.01), colors = my_colors)
 
 pdf("results/func_hm.pdf",
-    width = 10,
-    height = 20)
+    width = 30,
+    height = 50)
+
 draw(Heatmap(clean_func_mat,
              name = "Mean NSF",
              heatmap_legend_param = list(at = seq(0, 1, by = 0.1)),
@@ -67,4 +71,5 @@ draw(Heatmap(clean_func_mat,
              row_names_gp = gpar(fontsize = 4),
              column_names_gp = gpar(fontsize = 8),
              column_names_rot = 45))
+
 dev.off()
