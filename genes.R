@@ -39,6 +39,7 @@ func_mat <- func_annot_df %>%
               values_from = NSF,
               values_fill = NA) %>%
   column_to_rownames(var = "genome") %>%
+  select(-`NA`, -`Poorly characterized`, -`Not included in regular maps`) %>%
   as.matrix()
 
 my_tax <- top_df$Tax[top_df$genome %in% rownames(func_mat)]
