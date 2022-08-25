@@ -1,13 +1,3 @@
-df$DiSiperMbpMean <- df %>%
-  select(starts_with("DiSiperMbp")) %>%
-  as.matrix() %>%
-  rowMeans(na.rm = TRUE)
-
-df$NonsynonimousFractionMean <- df %>%
-  select(starts_with("NonsynonimousFraction")) %>%
-  as.matrix() %>%
-  rowMeans(na.rm = TRUE)
-
 disi_df <- filtered_df %>%
   select(starts_with("DiSiperMbp_"))
 names(disi_df) <- paste0("DiSiperMbp_", seq(1, ncol(disi_df)), ".")
@@ -47,7 +37,9 @@ p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax,
   labs(x = "Divergent Sites per Mbp at Max RPKM",
        y = "Nonsynonymous Fraction at Max RPKM",
        colour = "Max RPKM") +
-  scale_colour_gradientn(colours = c("blue", "yellow", "red")) +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(0, 65),
+                         breaks = seq(0, 60, by = 10)) +
   theme_classic()
 
 ggsave("microdiversity.pdf",

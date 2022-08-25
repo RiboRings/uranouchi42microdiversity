@@ -39,11 +39,32 @@ func_mat <- func_annot_df %>%
               values_from = NSF,
               values_fill = NA) %>%
   column_to_rownames(var = "genome") %>%
-  select(-`NA`, -`Poorly characterized`, -`Not included in regular maps`) %>%
   as.matrix()
 
-my_tax <- top_df$Tax[top_df$genome %in% rownames(func_mat)]
-my_tax_order <- order(gsub(".*\\;", "", gsub("o__", "", my_tax)))
+func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
+                                                    "Not included in regular maps",
+                                                    "Poorly characterized",
+                                                    "Aging",
+                                                    "Immune System",
+                                                    "Substance dependence",
+                                                    "Cardiovascular disease",
+                                                    "Neurodegenerative disease",
+                                                    "Endocrine and metabolic disease",
+                                                    "Nervous system",
+                                                    "Endocrine system",
+                                                    "Immune system",
+                                                    "Cancer: overview",
+                                                    "Cancer: specific types",
+                                                    "Infectious disease: parasitic",
+                                                    "Infectious disease: viral"))]
+
+my_tax <- paste(top_df$Phylum[top_df$genome %in% rownames(func_mat)],
+                top_df$Order[top_df$genome %in% rownames(func_mat)],
+                top_df$Genus[top_df$genome %in% rownames(func_mat)],
+                top_df$genome[top_df$genome %in% rownames(func_mat)],
+                sep = ";")
+
+my_tax_order <- order(gsub(".*\\;", "", my_tax))
 my_mat_order <- order(rownames(func_mat))
 
 my_tax <- my_tax[my_tax_order]
@@ -52,14 +73,17 @@ func_mat <- func_mat[my_mat_order, ]
 rownames(func_mat) <- my_tax
 
 clean_func_mat <- remove_problematic_combs(func_mat)
-write_csv(as.data.frame(clean_func_mat), "data/raw_gene_mat.csv")
+# write_csv(as.data.frame(clean_func_mat), "data/raw_gene_mat.csv")
 
 fun_color_range <- colorRampPalette(c("#1b98e0", "red"))
 my_colors <- fun_color_range(101)
 col_fun <- colorRamp2(breaks = seq(0, 1, by = 0.01), colors = my_colors)
 
+# clean_func_mat <- read_csv("data/raw_gene_mat.csv") %>%
+#   as.matrix()
+
 pdf("results/func_hm.pdf",
-    width = 30,
+    width = 20,
     height = 50)
 
 draw(Heatmap(clean_func_mat,
