@@ -56,7 +56,10 @@ func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
                                                     "Cancer: overview",
                                                     "Cancer: specific types",
                                                     "Infectious disease: parasitic",
-                                                    "Infectious disease: viral"))]
+                                                    "Infectious disease: viral",
+                                                    "Cellular community − eukaryotes",
+                                                    "Viral protein families",
+                                                    "Information processing in viruses"))]
 
 my_tax <- paste(top_df$Phylum[top_df$genome %in% rownames(func_mat)],
                 top_df$Order[top_df$genome %in% rownames(func_mat)],
