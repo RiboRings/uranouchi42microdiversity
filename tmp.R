@@ -61,3 +61,34 @@ micro_df <- merge_all(diversity_file_list) %>%
   na.omit() %>%
   dplyr::rename(nucdiv = nucl_diversity) %>%
   group_by(genome)
+
+gc_content <- read_tsv("data/gc.tsv", col_names = c("genome", "GC"))
+gc_content <- gc_content %>%
+  mutate(genome = gsub("matabat2bin.", "", gsub("_k141_\\d*", "", gsub("_*UU", "UU", genome))))
+gc_content <- gc_content %>%
+  group_by(genome) %>%
+  summarise(GC = mean(GC))
+
+base_content <- read_tsv("data/base_content.tsv", col_names = c("genome", "BaseContent"))
+base_content <- base_content %>%
+  mutate(genome = gsub("matabat2bin.", "", gsub("_k141_\\d*", "", gsub("_*UU", "UU", genome))))
+base_content <- base_content %>%
+  group_by(genome) %>%
+  summarise(BaseContent = mean(BaseContent))
+
+base_count <- read_tsv("data/base_count.tsv", col_names = c("genome", "BaseCount"))
+base_count <- base_count %>%
+  mutate(genome = gsub("matabat2bin.", "", gsub("_k141_\\d*", "", gsub("_*UU", "UU", genome))))
+base_count <- base_count %>%
+  group_by(genome) %>%
+  summarise(BaseCount = mean(BaseCount))
+
+seqkit_df <- gc_content %>%
+  full_join(base_content) %>%
+  full_join(base_count)
+
+seqkit_df <- filtered_df %>%
+  left_join(seqkit_df) %>%
+  select(genome, GC, BaseContent, BaseCount)
+
+write_csv2(seqkit_df, "data/seqkit.csv")

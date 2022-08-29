@@ -15,7 +15,8 @@ nsf_array <- sapply(iter(nsf_df, by = "row"),
 tax_df <- filtered_df %>%
   transmute(Tax = paste(Phylum, Genus, sep = ";"))
 
-microdiversity_df <- data.frame("DiSiperMbpAtAbundMax" = disi_array,
+microdiversity_df <- data.frame("genome" = filtered_df$genome, 
+                                "DiSiperMbpAtAbundMax" = disi_array,
                                 "NonsynonimousFractionAtAbundMax" = nsf_array,
                                 "AbundMax" = filtered_df$AbundMax,
                                 "Tax" = tax_df$Tax) %>%
@@ -48,3 +49,10 @@ ggsave("microdiversity.pdf",
        path = "results",
        width = 10,
        height = 7)
+
+interesting_guys <- microdiversity_df %>%
+  filter(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000 | AbundMax > 50)
+interesting_guys$behaviour <- ""
+interesting_guys$behaviour[interesting_guys$NonsynonimousFractionAtAbundMax > 0.5] <- "Actively selected"
+interesting_guys$behaviour[interesting_guys$DiSiperMbpAtAbundMax > 100000] <- "Highly variable"
+interesting_guys$behaviour[interesting_guys$AbundMax > 50] <- "Top abundant"

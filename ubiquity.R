@@ -8,15 +8,19 @@ ubiquity_mat <- micro_df %>%
   as.matrix()
 
 ubiquity <- sapply(iter(ubiquity_mat, by = "row"), function(x) sum(x > 0.50))
-ubiquity_df <- data.frame("Recurrence" = as.factor(ubiquity))
+ubiquity_df <- data.frame("Recurrence" = ubiquity)
+
+
 
 p1 <- ggplot(ubiquity_df, aes(x = Recurrence)) +
   geom_bar() +
-  scale_y_continuous(limits = c(0, 100),
-                     breaks = seq(0, 100, by = 10)) +
+  scale_x_continuous(limits = c(0, 43),
+                     breaks = c(1, seq(5, 40, by = 5))) +
+  scale_y_continuous(limits = c(0, 90),
+                     breaks = seq(0, 90, by = 10)) +
   labs(x = "MAG Recurrence",
        y = "MAG Count") +
-  theme_bw() +
+  theme_classic() +
   theme(panel.grid = element_blank())
 
 ubiquity2 <- lapply(1:nrow(ubiquity_mat), function(x) names(ubiquity_mat[x, ubiquity_mat[x, ] > 0.50]))
@@ -57,7 +61,8 @@ samples_df <- data.frame(Time = samples)
 p3 <- ggplot(samples_df, aes(x = Time)) +
   geom_bar(stat = "bin", aes(y = ..count..), bins = 30) +
   geom_density(aes(y = 30 * ..count..)) +
-  scale_x_date(date_breaks = "month") +
+  scale_x_date(date_breaks = "month",
+               date_labels = "%b %y") +
   scale_y_continuous(limits = c(0, 8),
                      breaks = seq(0, 8)) +
   labs(y = "Sample Count") +
