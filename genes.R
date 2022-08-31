@@ -24,20 +24,40 @@ mapping <- read_tsv("data/mapping.stb", col_names = c("scaffold", "genome")) %>%
 gene_files <- list.files(path = "data/gene_info", pattern = "*_gene_info.tsv")
 
 gene_df_list <- lapply(paste("data", "gene_info", gene_files, sep = "/"),
-                         gene_loader,
-                         method = read_tsv)
+                       gene_loader,
+                       method = read_tsv)
 
 gene_df <- merge_all(gene_df_list)
 func_annot_df <- gene_df %>%
   left_join(func_annot_cats) %>%
   mutate(NSF = SNV_N_count / SNV_count)
 
+# func_annot_df <- func_annot_df %>%
+#   filter(coverage > 10)
+#test <- func_annot_df %>%
+#  filter(level2_pathway_name %in% colnames(func_mat))
+#  p
+
 func_mat <- func_annot_df %>%
   group_by(genome, level2_pathway_name) %>%
-  summarise(NSF = mean(NSF)) %>%
+  summarise(NSF = mean(NSF, na.rm = TRUE)) %>%
   pivot_wider(names_from = level2_pathway_name,
               values_from = NSF,
               values_fill = NA) %>%
+  column_to_rownames(var = "genome") %>%
+  as.matrix()
+
+interesting_guys <- microdiversity_df %>%
+  filter(genome %in% rownames(func_mat)) %>%
+  arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax)
+
+func_mat <- read_csv("data/raw_gene_mat.csv") %>%
+  inner_join(interesting_guys) %>%
+  arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax) %>%
+  select(-NonsynonimousFractionAtAbundMax,
+         -DiSiperMbpAtAbundMax,
+         -AbundMax,
+         -Tax) %>%
   column_to_rownames(var = "genome") %>%
   as.matrix()
 
@@ -45,7 +65,7 @@ func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
                                                     "Not included in regular maps",
                                                     "Poorly characterized",
                                                     "Aging",
-                                                    "Immune System",
+                                                    "Immune system",
                                                     "Substance dependence",
                                                     "Cardiovascular disease",
                                                     "Neurodegenerative disease",
@@ -57,40 +77,41 @@ func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
                                                     "Cancer: specific types",
                                                     "Infectious disease: parasitic",
                                                     "Infectious disease: viral",
-                                                    "Cellular community − eukaryotes",
+                                                    "Cellular community - eukaryotes",
                                                     "Viral protein families",
-                                                    "Information processing in viruses"))]
+                                                    "Information processing in viruses",
+                                                    "Circulatory system",
+                                                    "Excretory system",
+                                                    "Digestive system",
+                                                    "Development and regeneration"))]
 
-raw_gene_mat <- as.data.frame(func_mat) %>%
-  rownames_to_column(var = "genome")
-write_csv(as.data.frame(raw_gene_mat), "data/raw_gene_mat.csv")
-
-# func_mat <- read_csv("data/raw_gene_mat.csv") %>%
-#  as.matrix()
-
-my_tax <- paste(top_df$Phylum[top_df$genome %in% rownames(func_mat)],
-                top_df$Order[top_df$genome %in% rownames(func_mat)],
-                top_df$Genus[top_df$genome %in% rownames(func_mat)],
-                top_df$genome[top_df$genome %in% rownames(func_mat)],
-                sep = ";")
-
-my_tax_order <- order(gsub(".*\\;", "", my_tax))
-my_mat_order <- order(rownames(func_mat))
-
-my_tax <- my_tax[my_tax_order]
-func_mat <- func_mat[my_mat_order, ]
-
-rownames(func_mat) <- my_tax
+#raw_gene_mat <- as.data.frame(func_mat) %>%
+#  rownames_to_column(var = "genome")
+#write_csv(as.data.frame(raw_gene_mat), "data/raw_gene_mat.csv")
+#
+#func_mat <- func_mat[rownames(func_mat) %in% unique(interesting_guys$genome), ]
 
 clean_func_mat <- remove_problematic_combs(func_mat)
+
+interesting_guys <- interesting_guys %>%
+  filter(genome %in% rownames(clean_func_mat))
+
+ha_row <- rowAnnotation(`Divergent Sites per Kbp` = anno_barplot(interesting_guys$DiSiperMbpAtAbundMax / 1000),
+                        `Max RPKM` = anno_barplot(interesting_guys$AbundMax),
+                        annotation_name_rot = 90,
+                        annotation_name_gp = gpar(fontsize = 8))
+
+clean_func_mat <- clean_func_mat[ , order(colMedians(clean_func_mat, na.rm = TRUE))]
+ha_col <- columnAnnotation(Distribution = anno_boxplot(clean_func_mat),
+                           annotation_name_gp = gpar(fontsize = 8))
 
 fun_color_range <- colorRampPalette(c("#1b98e0", "red"))
 my_colors <- fun_color_range(101)
 col_fun <- colorRamp2(breaks = seq(0, 1, by = 0.01), colors = my_colors)
 
 pdf("results/func_hm.pdf",
-    width = 20,
-    height = 50)
+    width = 10,
+    height = 15)
 
 draw(Heatmap(clean_func_mat,
              name = "Mean NSF",
@@ -99,8 +120,14 @@ draw(Heatmap(clean_func_mat,
              na_col = "grey",
              row_title = "MAG",
              column_title = "Functional Group",
-             row_names_gp = gpar(fontsize = 4),
+             show_row_names = FALSE,
+             cluster_rows = FALSE,
+             cluster_columns = FALSE,
              column_names_gp = gpar(fontsize = 8),
-             column_names_rot = 45))
+             column_names_rot = 45,
+             right_annotation = ha_row,
+             top_annotation = ha_col,
+             width = ncol(mat) * unit(4, "mm"), 
+             height = nrow(mat) * unit(0.18, "mm")))
 
 dev.off()

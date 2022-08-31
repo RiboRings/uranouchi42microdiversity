@@ -15,6 +15,7 @@ heatmap_mat <- top_df %>%
 tmp <- gsub("UU\\w", "", gsub("_RPKM", "", colnames(heatmap_mat)))
 colnames(heatmap_mat) <- paste(substr(tmp, 1, 2), substr(tmp, 3, 4), substr(tmp, 5, 6), sep = "-")
 heatmap_mat <- heatmap_mat[ , order(colnames(heatmap_mat))]
+colnames(heatmap_mat) <- format(as.Date(colnames(heatmap_mat)), "%b %y")
 
 h1 <- Heatmap(heatmap_mat,
              heatmap_legend_param = list(at = c(0, 0.1, 1, 5, 10, 20, 40, 60)),
@@ -24,8 +25,11 @@ h1 <- Heatmap(heatmap_mat,
              cluster_columns = FALSE,
              row_title = "MAG",
              column_title = "Sample",
-             row_names_gp = gpar(fontsize = 4),
-             column_names_rot = 45)
+             row_names_gp = gpar(fontsize = 0.7),
+             column_names_gp = gpar(fontsize = 8),
+             column_names_rot = 45,
+             width = ncol(heatmap_mat)*unit(4.5, "mm"), 
+             height = nrow(heatmap_mat)*unit(0.5, "mm"))
 
 nd_mat <- top_df %>%
   select(Tax, starts_with("nucdiv_")) %>%
@@ -33,6 +37,7 @@ nd_mat <- top_df %>%
   as.matrix()
 colnames(nd_mat) <- paste(substr(tmp, 1, 2), substr(tmp, 3, 4), substr(tmp, 5, 6), sep = "-")
 nd_mat <- nd_mat[ , order(colnames(nd_mat))]
+colnames(nd_mat) <- format(as.Date(colnames(nd_mat)), "%b %y")
 
 ha <- HeatmapAnnotation(`Max RPKM` = filtered_df$AbundMax,
                         `Max ND` = rowMaxs(top_df %>%
@@ -51,15 +56,18 @@ h2 <- Heatmap(nd_mat,
              cluster_columns = FALSE,
              row_title = "MAG",
              column_title = "Sample",
-             row_names_gp = gpar(fontsize = 4),
+             row_names_gp = gpar(fontsize = 0.7),
+             column_names_gp = gpar(fontsize = 8),
              column_names_rot = 45,
-             right_annotation = ha)
+             right_annotation = ha,
+             width = ncol(mat)*unit(4.5, "mm"), 
+             height = nrow(mat)*unit(0.5, "mm"))
 
 ht_list <- h1 + h2
 
 pdf("results/composition.pdf",
-    width = 30,
-    height = 50)
+    width = 20,
+    height = 30)
 
 draw(ht_list)
 

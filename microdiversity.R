@@ -23,11 +23,11 @@ microdiversity_df <- data.frame("genome" = filtered_df$genome,
   filter(NonsynonimousFractionAtAbundMax != 0) %>%
   mutate(Tax = ifelse(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000 | AbundMax > 50, Tax, ""))
 
-p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax,
+p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
                                    y = NonsynonimousFractionAtAbundMax,
                                    colour = AbundMax)) +
-  scale_x_continuous(limits = c(0, 150000),
-                     breaks = seq(0, 150000, 25000)) +
+  scale_x_continuous(limits = c(0, 150),
+                     breaks = seq(0, 150, 25)) +
   scale_y_continuous(limits = c(0, 1),
                      breaks = seq(0, 1, 0.1)) +
   geom_text_repel(aes(label = Tax),
@@ -35,7 +35,7 @@ p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax,
                   colour = "black",
                   max.overlaps = 1000) +
   geom_point(size = 1) +
-  labs(x = "Divergent Sites per Mbp at Max RPKM",
+  labs(x = "Divergent Sites per Gbp at Max RPKM",
        y = "Nonsynonymous Fraction at Max RPKM",
        colour = "Max RPKM") +
   scale_colour_gradientn(colours = c("blue", "yellow", "red"),
@@ -49,10 +49,3 @@ ggsave("microdiversity.pdf",
        path = "results",
        width = 10,
        height = 7)
-
-interesting_guys <- microdiversity_df %>%
-  filter(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000 | AbundMax > 50)
-interesting_guys$behaviour <- ""
-interesting_guys$behaviour[interesting_guys$NonsynonimousFractionAtAbundMax > 0.5] <- "Actively selected"
-interesting_guys$behaviour[interesting_guys$DiSiperMbpAtAbundMax > 100000] <- "Highly variable"
-interesting_guys$behaviour[interesting_guys$AbundMax > 50] <- "Top abundant"
