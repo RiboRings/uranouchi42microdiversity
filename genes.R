@@ -1,6 +1,6 @@
 func_annot <- read_tsv("data/special_func_annot.gff",
                        col_names = c("pass", "gene", "KO", "thrshld", "score", "Evalue", "Definition"))
-func_cats <- read_tsv("data/KEGG_pathway_ko_uniq.txt")
+func_cats <- read_tsv("../KEGG_pathway_ko_uniq.txt")
 
 func_annot_cats <- func_annot %>%
   left_join(func_cats, by = c("KO" = "ko")) %>%
@@ -28,15 +28,17 @@ gene_df_list <- lapply(paste("data", "gene_info", gene_files, sep = "/"),
                        method = read_tsv)
 
 gene_df <- merge_all(gene_df_list)
+
+gene_df <- gene_df %>%
+  filter(!is.na(SNV_count)) %>%
+  mutate(SNV_count = ifelse(SNV_count == 0, 1, SNV_count))
+
 func_annot_df <- gene_df %>%
   left_join(func_annot_cats) %>%
   mutate(NSF = SNV_N_count / SNV_count)
 
-# func_annot_df <- func_annot_df %>%
-#   filter(coverage > 10)
-#test <- func_annot_df %>%
-#  filter(level2_pathway_name %in% colnames(func_mat))
-#  p
+interesting_guys <- microdiversity_df %>%
+  arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax)
 
 func_mat <- func_annot_df %>%
   group_by(genome, level2_pathway_name) %>%
@@ -44,19 +46,12 @@ func_mat <- func_annot_df %>%
   pivot_wider(names_from = level2_pathway_name,
               values_from = NSF,
               values_fill = NA) %>%
-  column_to_rownames(var = "genome") %>%
-  as.matrix()
-
-interesting_guys <- microdiversity_df %>%
-  filter(genome %in% rownames(func_mat)) %>%
-  arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax)
-
-func_mat <- read_csv("data/raw_gene_mat.csv") %>%
   inner_join(interesting_guys) %>%
   arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax) %>%
   select(-NonsynonimousFractionAtAbundMax,
          -DiSiperMbpAtAbundMax,
          -AbundMax,
+         -Recurrence,
          -Tax) %>%
   column_to_rownames(var = "genome") %>%
   as.matrix()
@@ -85,11 +80,9 @@ func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
                                                     "Digestive system",
                                                     "Development and regeneration"))]
 
-#raw_gene_mat <- as.data.frame(func_mat) %>%
-#  rownames_to_column(var = "genome")
-#write_csv(as.data.frame(raw_gene_mat), "data/raw_gene_mat.csv")
-#
-#func_mat <- func_mat[rownames(func_mat) %in% unique(interesting_guys$genome), ]
+raw_gene_mat <- as.data.frame(func_mat) %>%
+  rownames_to_column(var = "genome")
+write_csv(as.data.frame(raw_gene_mat), "data/raw_gene_mat.csv")
 
 clean_func_mat <- remove_problematic_combs(func_mat)
 

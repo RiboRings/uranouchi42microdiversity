@@ -12,12 +12,16 @@ plot_ly(data = filtered_df,
         size = ~AbundMax) %>%
   layout(scene = list(yaxis = list(title = 'Mean ND')))
 
-p1 <- ggplot(filtered_df, aes(x = NucDivMean, y = N50)) +
+p1 <- ggplot(filtered_df, aes(x = NucDivMean, y = N50, colour = MaxCov)) +
   geom_point(size = 1) +
   scale_x_continuous(limits = c(0, 0.06),
                      breaks = seq(0, 0.06, by = 0.01)) +
   scale_y_continuous(limits = c(0, 10^6)) +
-  labs(x = "Mean Nucleotide Diversity") +
+  labs(x = "Mean Nucleotide Diversity",
+       colour = "Max Coverage") +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(0, max(filtered_df$MaxCov)),
+                         breaks = seq(0, 1250, by = 250)) +
   theme_classic()
 
 tmp <- read_csv2("data/tmp.txt", col_names = FALSE)
@@ -33,16 +37,21 @@ filtered_df <- filtered_df %>%
 filtered_df <- filtered_df %>%
   mutate(ContigLength = contigs / length * 1000000)
 
-p2 <- ggplot(filtered_df, aes(x = NucDivMean, y = ContigLength)) +
+p2 <- ggplot(filtered_df, aes(x = NucDivMean, y = ContigLength, colour = MaxCov)) +
   geom_point(size = 1) +
   scale_x_continuous(limits = c(0, 0.06),
                      breaks = seq(0, 0.06, by = 0.01)) +
   scale_y_log10() +
   labs(x = "Mean Nucleotide Diversity",
-       y = "Contigs per million Base Pairs") +
+       y = "Contigs per million Base Pairs",
+       colour = "Max Coverage") +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(0, max(filtered_df$MaxCov)),
+                         breaks = seq(0, 1250, by = 250)) +
   theme_classic()
 
 p <- p1 + p2 +
+  plot_layout(guides = "collect") +
   plot_annotation(tag_levels = 'A')
 
 ggsave("quality.pdf",

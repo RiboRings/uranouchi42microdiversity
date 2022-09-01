@@ -8,9 +8,9 @@ ubiquity_mat <- micro_df %>%
   as.matrix()
 
 ubiquity <- sapply(iter(ubiquity_mat, by = "row"), function(x) sum(x > 0.50))
-ubiquity_df <- data.frame("Recurrence" = ubiquity)
-
-
+ubiquity_df <- data.frame("genome" = rownames(ubiquity_mat), "Recurrence" = ubiquity)
+filtered_df <- filtered_df %>%
+  full_join(ubiquity_df)
 
 p1 <- ggplot(ubiquity_df, aes(x = Recurrence)) +
   geom_bar() +
