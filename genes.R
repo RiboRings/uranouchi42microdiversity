@@ -1,6 +1,6 @@
 func_annot <- read_tsv("data/special_func_annot.gff",
                        col_names = c("pass", "gene", "KO", "thrshld", "score", "Evalue", "Definition"))
-func_cats <- read_tsv("../KEGG_pathway_ko_uniq.txt")
+func_cats <- read_tsv("data/KEGG_pathway_ko_uniq.txt")
 
 func_annot_cats <- func_annot %>%
   left_join(func_cats, by = c("KO" = "ko")) %>%
