@@ -29,6 +29,8 @@ gene_df_list <- lapply(paste("data", "gene_info", gene_files, sep = "/"),
 
 gene_df <- merge_all(gene_df_list)
 
+source("experimental.R")
+
 gene_df <- gene_df %>%
   filter(!is.na(SNV_count)) %>%
   mutate(SNV_count = ifelse(SNV_count == 0, 1, SNV_count))

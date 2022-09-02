@@ -18,18 +18,21 @@ heatmap_mat <- heatmap_mat[ , order(colnames(heatmap_mat))]
 colnames(heatmap_mat) <- format(as.Date(colnames(heatmap_mat)), "%b %y")
 
 h1 <- Heatmap(heatmap_mat,
-             heatmap_legend_param = list(at = c(0, 0.1, 1, 5, 10, 20, 40, 60)),
-             col = col_fun1,
-             name = "RPKM",
-             cluster_rows = TRUE,
-             cluster_columns = FALSE,
-             row_title = "MAG",
-             column_title = "Sample",
-             row_names_gp = gpar(fontsize = 0.7),
-             column_names_gp = gpar(fontsize = 8),
-             column_names_rot = 45,
-             width = ncol(heatmap_mat)*unit(4.5, "mm"), 
-             height = nrow(heatmap_mat)*unit(0.5, "mm"))
+              heatmap_legend_param = list(at = c(0, 0.1, 1,5, 10, 20, 40, 60),
+                                          break_dist = 1,
+                                          legend_height = unit(4, "cm")),
+              col = col_fun1,
+              name = "RPKM",
+              cluster_rows = TRUE,
+              cluster_columns = FALSE,
+              show_row_dend = FALSE,
+              row_title = "MAG",
+              column_title = "Time Series of Abundance (RPKM)",
+              row_names_gp = gpar(fontsize = 0.7),
+              column_names_gp = gpar(fontsize = 8),
+              column_names_rot = 45,
+              width = ncol(heatmap_mat) * unit(4.5, "mm"), 
+              height = nrow(heatmap_mat) * unit(0.5, "mm"))
 
 nd_mat <- top_df %>%
   select(Tax, starts_with("nucdiv_")) %>%
@@ -49,19 +52,22 @@ ha <- HeatmapAnnotation(`Max RPKM` = filtered_df$AbundMax,
                         show_legend = FALSE)
 
 h2 <- Heatmap(nd_mat,
-             heatmap_legend_param = list(at = c(0, 0.02, 0.04, 0.06, 0.075)),
-             col = col_fun2,
-             name = "ND",
-             cluster_rows = TRUE,
-             cluster_columns = FALSE,
-             row_title = "MAG",
-             column_title = "Sample",
-             row_names_gp = gpar(fontsize = 0.7),
-             column_names_gp = gpar(fontsize = 8),
-             column_names_rot = 45,
-             right_annotation = ha,
-             width = ncol(mat)*unit(4.5, "mm"), 
-             height = nrow(mat)*unit(0.5, "mm"))
+              heatmap_legend_param = list(at = c(0, 0.02, 0.04, 0.06, 0.075),
+                                          break_dist = 1,
+                                          legend_height = unit(4, "cm")),
+              col = col_fun2,
+              name = "ND",
+              cluster_rows = TRUE,
+              cluster_columns = FALSE,
+              show_row_dend = FALSE,
+              row_title = "MAG",
+              column_title = "Time Series of Nucleotide Diversity (ND)",
+              row_names_gp = gpar(fontsize = 0.7),
+              column_names_gp = gpar(fontsize = 8),
+              column_names_rot = 45,
+              right_annotation = ha,
+              width = ncol(mat) * unit(4.5, "mm"), 
+              height = nrow(mat) * unit(0.5, "mm"))
 
 ht_list <- h1 + h2
 
