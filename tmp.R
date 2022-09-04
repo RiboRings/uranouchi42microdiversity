@@ -57,6 +57,8 @@ sample_loader <- function(sample_name) {
   
 }
 
+###
+
 micro_df <- merge_all(diversity_file_list) %>%
   na.omit() %>%
   dplyr::rename(nucdiv = nucl_diversity) %>%
@@ -92,3 +94,25 @@ seqkit_df <- filtered_df %>%
   select(genome, GC, BaseContent, BaseCount)
 
 write_csv2(seqkit_df, "data/seqkit.csv")
+
+###
+
+a <- fviz_nbclust(heatmap_mat, kmeans, method = "wss")
+b <- fviz_nbclust(nd_mat, kmeans, method = "wss")
+
+a_mod <- a +
+  labs(title = "RPKM Clustering")
+
+b_mod <- b +
+  labs(title = "Nucleotide Diversity Clustering") +
+  theme(axis.title.y = element_blank())
+
+p <- (a_mod | b_mod) +
+  plot_annotation(tag_levels = "A")
+
+ggsave("kmeans_optimal_clustering.pdf",
+       plot = p,
+       device = "pdf",
+       path = "results",
+       width = 10,
+       height = 5)

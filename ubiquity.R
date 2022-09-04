@@ -19,7 +19,7 @@ p1 <- ggplot(ubiquity_df, aes(x = Recurrence)) +
   scale_y_continuous(limits = c(0, 90),
                      breaks = seq(0, 90, by = 10)) +
   labs(x = "MAG Recurrence",
-       y = "MAG Count") +
+       y = "Number of MAGs") +
   theme_classic() +
   theme(panel.grid = element_blank())
 
@@ -65,7 +65,7 @@ p3 <- ggplot(samples_df, aes(x = Time)) +
                date_labels = "%b %y") +
   scale_y_continuous(limits = c(0, 8),
                      breaks = seq(0, 8)) +
-  labs(y = "Sample Count") +
+  labs(y = "Number of Samples") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 

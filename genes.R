@@ -85,6 +85,37 @@ func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
 raw_gene_mat <- as.data.frame(func_mat) %>%
   rownames_to_column(var = "genome")
 write_csv(as.data.frame(raw_gene_mat), "data/raw_gene_mat.csv")
+# func_mat <- read_csv("data/raw_gene_mat.csv")
+
+func_bubble <- func_mat %>%
+  pivot_longer(cols = -genome,
+               names_to = "FunctionalCategory",
+               values_to = "NonsynonymousFraction") %>%
+  left_join(microdiversity_df)
+
+max_nsf <- max(func_bubble$NonsynonimousFractionAtAbundMax)
+min_nsf <- min(func_bubble$NonsynonimousFractionAtAbundMax)
+
+p <- ggplot(func_bubble, aes(x = NonsynonymousFraction,
+                             y = reorder(FunctionalCategory, NonsynonymousFraction, median, na.rm = TRUE),
+                             colour = NonsynonimousFractionAtAbundMax)) +
+  geom_point(size = 1) +
+  scale_x_continuous(limits = c(0, 1),
+                     breaks = seq(0, 1, by = 0.1)) +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(min_nsf, max_nsf),
+                         breaks = seq(0.1, 0.6, by = 0.1)) +
+  labs(x = "Nonsynonymous Fraction",
+       y = "Functional Category",
+       colour = "NSF") +
+  theme_classic()
+
+ggsave("func_bubble.pdf",
+       plot = p,
+       device = "pdf",
+       path = "results",
+       width = 10,
+       height = 7)
 
 clean_func_mat <- remove_problematic_combs(func_mat)
 
@@ -114,7 +145,7 @@ draw(Heatmap(clean_func_mat,
              col = col_fun,
              na_col = "grey",
              row_title = "MAG",
-             column_title = "Functional Group",
+             column_title = "Functional Category",
              show_row_names = FALSE,
              cluster_rows = FALSE,
              cluster_columns = FALSE,

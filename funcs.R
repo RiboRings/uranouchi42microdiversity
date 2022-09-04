@@ -53,7 +53,8 @@ gene_loader <- function(sample_name, gen_list = "", method = read_csv) {
   
   sample_df <- method(sample_name) %>%
     mutate(sample = gsub("data/gene_info/", "", gsub("_gene_info.tsv", "", sample_name))) %>%
-    left_join(mapping)
+    left_join(mapping) %>%
+    filter(AbundMaxSample == sample)
   
   return(sample_df)
   

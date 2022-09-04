@@ -12,21 +12,26 @@ heatmap_mat <- top_df %>%
   column_to_rownames(var = "Tax") %>%
   as.matrix()
 
+heatmap_mat <- heatmap_mat[order(rownames(heatmap_mat)), ]
+
 tmp <- gsub("UU\\w", "", gsub("_RPKM", "", colnames(heatmap_mat)))
 colnames(heatmap_mat) <- paste(substr(tmp, 1, 2), substr(tmp, 3, 4), substr(tmp, 5, 6), sep = "-")
 heatmap_mat <- heatmap_mat[ , order(colnames(heatmap_mat))]
 colnames(heatmap_mat) <- format(as.Date(colnames(heatmap_mat)), "%b %y")
 
 h1 <- Heatmap(heatmap_mat,
-              heatmap_legend_param = list(at = c(0, 0.1, 1,5, 10, 20, 40, 60),
+              heatmap_legend_param = list(at = c(0, 0.1, 1, 5, 10, 20, 40, 60),
                                           break_dist = 1,
                                           legend_height = unit(4, "cm")),
               col = col_fun1,
               name = "RPKM",
               cluster_rows = TRUE,
+              row_km = 5,
+              row_km_repeats = 20,
               cluster_columns = FALSE,
               show_row_dend = FALSE,
               row_title = "MAG",
+              row_names_side = "left",
               column_title = "Time Series of Abundance (RPKM)",
               row_names_gp = gpar(fontsize = 0.7),
               column_names_gp = gpar(fontsize = 8),
@@ -38,18 +43,12 @@ nd_mat <- top_df %>%
   select(Tax, starts_with("nucdiv_")) %>%
   column_to_rownames(var = "Tax") %>%
   as.matrix()
+
+nd_mat <- nd_mat[order(rownames(nd_mat)), ]
+
 colnames(nd_mat) <- paste(substr(tmp, 1, 2), substr(tmp, 3, 4), substr(tmp, 5, 6), sep = "-")
 nd_mat <- nd_mat[ , order(colnames(nd_mat))]
 colnames(nd_mat) <- format(as.Date(colnames(nd_mat)), "%b %y")
-
-ha <- HeatmapAnnotation(`Max RPKM` = filtered_df$AbundMax,
-                        `Max ND` = rowMaxs(top_df %>%
-                                             select(starts_with("nucdiv_")) %>%
-                                             as.matrix()),
-                        which = "row",
-                        col = list(`Max RPKM` = col_fun1,
-                                   `Max ND` = col_fun2),
-                        show_legend = FALSE)
 
 h2 <- Heatmap(nd_mat,
               heatmap_legend_param = list(at = c(0, 0.02, 0.04, 0.06, 0.075),
@@ -59,23 +58,41 @@ h2 <- Heatmap(nd_mat,
               name = "ND",
               cluster_rows = TRUE,
               cluster_columns = FALSE,
-              show_row_dend = FALSE,
               row_title = "MAG",
+              row_names_side = "left",
               column_title = "Time Series of Nucleotide Diversity (ND)",
               row_names_gp = gpar(fontsize = 0.7),
               column_names_gp = gpar(fontsize = 8),
               column_names_rot = 45,
-              right_annotation = ha,
-              width = ncol(mat) * unit(4.5, "mm"), 
-              height = nrow(mat) * unit(0.5, "mm"))
+              width = ncol(nd_mat) * unit(4.5, "mm"), 
+              height = nrow(nd_mat) * unit(0.5, "mm"))
 
 ht_list <- h1 + h2
+
+ht_list <- draw(ht_list)
+r.dend <- row_dend(ht_list)
+rcl.list <- row_order(ht_list)
+
+# loop to extract genes for each cluster.
+for (i in 1:length(row_order(ht_list))){
+  if (i == 1) {
+    clu <- t(t(row.names(heatmap_mat[row_order(ht_list)[[i]], ])))
+    out <- cbind(clu, paste("Cluster", i, sep = " "))
+    colnames(out) <- c("Tax", "Cluster")
+  } else {
+    clu <- t(t(row.names(heatmap_mat[row_order(ht_list)[[i]], ])))
+    clu <- cbind(clu, paste("Cluster", i, sep = " "))
+    out <- rbind(out, clu)
+  }
+}
+
+subgroup_df <- as.data.frame(out)
 
 pdf("results/composition.pdf",
     width = 20,
     height = 30)
 
-draw(ht_list)
+ht_list
 
 dev.off()
 

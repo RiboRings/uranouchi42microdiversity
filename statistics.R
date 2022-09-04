@@ -11,10 +11,14 @@ mean_nucdiv <- df %>%
 # mean contigs, stdev contigs, distribution
 # mean N50, stdev N50, distribution
 
-stats_df <- read_csv2("mags.csv")
+stats_df <- read_csv2("data/mags.csv")
 seqkit_df <- read_csv2("data/seqkit.csv")
+coding_density_df <- read_csv2("data/coding_density.csv") %>%
+  select(-`...1`)
+
 stats_df <- stats_df %>%
-  left_join(seqkit_df)
+  left_join(seqkit_df) %>%
+  left_join(coding_density_df)
 
 p1 <- ggplot(stats_df, aes(x = length / 1000000)) +
   geom_histogram(bins = 100) +
@@ -44,17 +48,23 @@ p3 <- ggplot(stats_df, aes(x = N50)) +
 pivoted_df <- stats_df %>%
   pivot_longer(cols = c("completeness",
                         "contamination",
-                        "strain_heterogeneity",
+                        "CodingDensity",
                         "GC"),
                values_to = "checkm_percent",
                names_to = "checkm_parameter")
 
-pivoted_df$checkm_parameter[pivoted_df$checkm_parameter == "strain_heterogeneity"] <- "Strain Heterogeneity"
+pivoted_df$checkm_parameter[pivoted_df$checkm_parameter == "CodingDensity"] <- "Coding Density"
 pivoted_df$checkm_parameter[pivoted_df$checkm_parameter == "completeness"] <- "Completeness"
 pivoted_df$checkm_parameter[pivoted_df$checkm_parameter == "contamination"] <- "Contamination"
+pivoted_df$checkm_parameter[pivoted_df$checkm_parameter == "GC"] <- "GC Content"
+
+pivoted_df$checkm_parameter <- factor(
+  pivoted_df$checkm_parameter, 
+  levels = c("Completeness", "Contamination", "GC Content", "Coding Density")
+)
 
 p4 <- ggplot(pivoted_df, aes(x = checkm_parameter, y = checkm_percent)) +
-  geom_violin() +
+  geom_boxplot() +
   scale_y_continuous(limits = c(0, 100),
                      breaks = seq(0, 100, by = 10)) +
   labs(x = "MAG Quality Statistics",
@@ -64,7 +74,7 @@ p4 <- ggplot(pivoted_df, aes(x = checkm_parameter, y = checkm_percent)) +
 p <- (p1 / p2 / p3 | p4) +
   plot_annotation(tag_levels = "A")
 
-ggsave("statistics.pdf",
+ggsave("statistics_alt.pdf",
        plot = p,
        width = 20,
        height = 10,
