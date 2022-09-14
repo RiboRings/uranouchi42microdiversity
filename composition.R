@@ -2,7 +2,7 @@ n_top_taxa <- 1132
 
 top_df <- filtered_df %>%
   slice_max(AbundMax, n = n_top_taxa) %>%
-  mutate(Tax = paste(Order, genome, sep = ";"))
+  mutate(Tax = paste(Phylum, Order, gsub("MAG ", "", ID), sep = ";"))
 
 col_fun1 <- colorRamp2(c(0, 0.1, 1, 5, 10, 20, 40, 60), col = rev(rainbow(8)))
 col_fun2 <- colorRamp2(c(0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.075), col = rev(rainbow(8)))
@@ -36,8 +36,8 @@ h1 <- Heatmap(heatmap_mat,
               row_names_gp = gpar(fontsize = 0.7),
               column_names_gp = gpar(fontsize = 8),
               column_names_rot = 45,
-              width = ncol(heatmap_mat) * unit(4.5, "mm"), 
-              height = nrow(heatmap_mat) * unit(0.5, "mm"))
+              width = ncol(heatmap_mat) * unit(4.8, "mm"), 
+              height = nrow(heatmap_mat) * unit(0.6, "mm"))
 
 nd_mat <- top_df %>%
   select(Tax, starts_with("nucdiv_")) %>%
@@ -64,8 +64,8 @@ h2 <- Heatmap(nd_mat,
               row_names_gp = gpar(fontsize = 0.7),
               column_names_gp = gpar(fontsize = 8),
               column_names_rot = 45,
-              width = ncol(nd_mat) * unit(4.5, "mm"), 
-              height = nrow(nd_mat) * unit(0.5, "mm"))
+              width = ncol(nd_mat) * unit(4.8, "mm"), 
+              height = nrow(nd_mat) * unit(0.6, "mm"))
 
 ht_list <- h1 + h2
 
@@ -88,32 +88,43 @@ for (i in 1:length(row_order(ht_list))){
 
 subgroup_df <- as.data.frame(out)
 
+subgroup_df <- top_df %>%
+  left_join(subgroup_df) %>%
+  select(Tax, Cluster)
+
 pdf("results/composition.pdf",
     width = 20,
     height = 30)
 
-ht_list
+draw(ht_list)
 
 dev.off()
-
 max_df <- data.frame(AbundMax = filtered_df$AbundMax,
+                     Recurrence = filtered_df$Recurrence,
+                     Tax = subgroup_df$Tax,
+                     Cluster = subgroup_df$Cluster,
                      NucDivMax = rowMaxs(top_df %>%
                                            select(starts_with("nucdiv_")) %>%
                                            as.matrix()))
 
-p <- ggplot(max_df, aes(x = AbundMax, NucDivMax)) +
+max_df <- max_df %>%
+  mutate(Tax = ifelse(AbundMax > 25, Tax, ""))
+
+p_max <- ggplot(max_df, aes(x = AbundMax,
+                            y = NucDivMax,
+                            colour = Recurrence,
+                            shape = Cluster)) +
   geom_point() +
   scale_y_log10() +
   scale_x_continuous(limits = c(0, 65),
                      breaks = seq(0, 60, by = 10)) +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(1, 42),
+                         breaks = c(1, seq(10, 40, by = 10))) +
+  geom_text_repel(aes(label = Tax),
+                  size = 1.8,
+                  colour = "black",
+                  max.overlaps = 1000) +
   labs(x = "Max RPKM",
        y = "Max Nucleotide Diversity") +
   theme_classic()
-
-ggsave("nd_rpkm.pdf",
-       plot = p,
-       device = "pdf",
-       path = "results",
-       width = 10,
-       height = 7)
-                     

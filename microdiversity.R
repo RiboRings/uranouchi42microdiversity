@@ -13,7 +13,7 @@ nsf_array <- sapply(iter(nsf_df, by = "row"),
                     max_mapper, pattern = "NonsynonimousFraction")
 
 tax_df <- filtered_df %>%
-  transmute(Tax = paste(Phylum, Genus, sep = ";"))
+  transmute(Tax = paste(Phylum, Order, gsub("MAG ", "", ID), sep = ";"))
 
 microdiversity_df <- data.frame("genome" = filtered_df$genome, 
                                 "DiSiperMbpAtAbundMax" = disi_array,
@@ -22,17 +22,17 @@ microdiversity_df <- data.frame("genome" = filtered_df$genome,
                                 "Recurrence" = filtered_df$Recurrence,
                                 "Tax" = tax_df$Tax) %>%
   filter(NonsynonimousFractionAtAbundMax != 0) %>%
-  mutate(Tax = ifelse(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000 | AbundMax > 50, Tax, ""))
+  mutate(Tax = ifelse(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000, Tax, ""))
 
-p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
-                                   y = NonsynonimousFractionAtAbundMax,
+pm <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
+                                   y = NonsynonimousFractionAtAbundMax * 100,
                                    colour = Recurrence,
                                    size = AbundMax)) +
   geom_point() +
   scale_x_continuous(limits = c(0, 150),
                      breaks = seq(0, 150, 25)) +
-  scale_y_continuous(limits = c(0, 1),
-                     breaks = seq(0, 1, 0.1)) +
+  scale_y_continuous(limits = c(0, 100),
+                     breaks = seq(0, 100, 10)) +
   scale_size_continuous(limits = c(0, 65),
                         breaks = c(1, seq(20, 60, by = 20))) +
   scale_colour_gradientn(colours = c("blue", "yellow", "red"),
@@ -42,14 +42,14 @@ p <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
                   size = 1.8,
                   colour = "black",
                   max.overlaps = 1000) +
-  labs(x = "Divergent Sites per Kbp at Max RPKM",
-       y = "Nonsynonymous Fraction at Max RPKM",
+  labs(x = "Number of Divergent Sites per Kbp",
+       y = "Percentage of non-synonymous Mutations at Genome Level (%)",
        colour = "Recurrence",
        size = "Max RPKM") +
   theme_classic()
 
 ggsave("microdiversity.pdf",
-       plot = p,
+       plot = pm,
        device = "pdf",
        path = "results",
        width = 10,

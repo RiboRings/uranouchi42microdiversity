@@ -23,7 +23,7 @@ stats_df <- stats_df %>%
 p1 <- ggplot(stats_df, aes(x = length / 1000000)) +
   geom_histogram(bins = 100) +
   labs(x = "Genome Length (Mbp)",
-       y = "Count") +
+       y = "Number of MAGs") +
   scale_x_continuous(limits = c(0, 8),
                      breaks = seq(0, 8)) +
   scale_y_continuous(limits = c(0, 70),
@@ -36,13 +36,13 @@ p2 <- ggplot(stats_df, aes(x = contigs)) +
   scale_y_continuous(limits = c(0, 60),
                      breaks = seq(0, 60, by = 10)) +
   labs(x = "Contigs",
-       y = "Count") +
+       y = "Number of MAGs") +
   theme_classic()
 
 p3 <- ggplot(stats_df, aes(x = N50)) +
   geom_histogram(bins = 100) +
   scale_x_log10(labels = scales::number_format()) +
-  labs(y = "Count") +
+  labs(y = "Number of MAGs") +
   theme_classic()
 
 pivoted_df <- stats_df %>%
@@ -74,7 +74,7 @@ p4 <- ggplot(pivoted_df, aes(x = checkm_parameter, y = checkm_percent)) +
 p <- (p1 / p2 / p3 | p4) +
   plot_annotation(tag_levels = "A")
 
-ggsave("statistics_alt.pdf",
+ggsave("statistics.pdf",
        plot = p,
        width = 20,
        height = 10,

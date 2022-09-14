@@ -55,3 +55,5 @@ max_coverage_threshold <- 10
 filtered_df <- df %>%
   filter(MaxCov > max_coverage_threshold) %>%
   arrange(desc(AbundMax))
+
+filtered_df$ID <- paste("MAG", order(gsub("UU(\\w)(\\d*)_(\\d*)", "\\2_\\1_\\3", filtered_df$genome)))
