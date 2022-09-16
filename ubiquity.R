@@ -13,13 +13,30 @@ filtered_df <- filtered_df %>%
   full_join(ubiquity_df)
 
 p1 <- ggplot(ubiquity_df, aes(x = Recurrence)) +
-  geom_bar() +
+  geom_bar(colour = "black",
+           fill = "#F8766D") +
   scale_x_continuous(limits = c(0, 43),
                      breaks = c(1, seq(5, 40, by = 5))) +
   scale_y_continuous(limits = c(0, 90),
                      breaks = seq(0, 90, by = 10)) +
   labs(x = "MAG Recurrence",
        y = "Number of MAGs") +
+  theme_classic() +
+  theme(panel.grid = element_blank())
+
+p7 <- ggplot(ubiquity_df, aes(x = Recurrence)) +
+  stat_bin(aes(y = cumsum(..count..)),
+           bins = 44,
+           colour = "black",
+           fill = "#00BFC4") +
+  geom_bar(colour = "black",
+           fill = "#F8766D") +
+  scale_x_continuous(limits = c(0, 43),
+                     breaks = c(1, seq(5, 40, by = 5))) +
+  scale_y_continuous(limits = c(0, 1200),
+                     breaks = seq(0, 1500, by = 100)) +
+  labs(x = "MAG Recurrence",
+       y = "Cumulative Number of MAGs") +
   theme_classic() +
   theme(panel.grid = element_blank())
 
@@ -58,18 +75,36 @@ samples <- paste(substr(samples, 1, 2), substr(samples, 3, 4), substr(samples, 5
 samples <- as.Date(samples)
 samples_df <- data.frame(Time = samples)
 
-p3 <- ggplot(samples_df, aes(x = Time)) +
-  geom_bar(stat = "bin", aes(y = ..count..), bins = 30) +
-  geom_density(aes(y = 30 * ..count..)) +
+ubiquity_df$ExtractionDate <- gsub("UU\\w(\\d*)_\\d*", "\\1", ubiquity_df$genome)
+ubiquity_df$ExtractionDate <- paste(substr(ubiquity_df$ExtractionDate, 1, 2), substr(ubiquity_df$ExtractionDate, 3, 4), substr(ubiquity_df$ExtractionDate, 5, 6), sep = "-")
+ubiquity_df$ExtractionDate <- as.Date(ubiquity_df$ExtractionDate)
+
+p3 <- ggplot() +
+  geom_bar(data = samples_df,
+           stat = "bin",
+           aes(x = Time,
+               y = ..count..),
+           bins = 23,
+           colour = "black",
+           fill = "white") +
+  geom_density(data = ubiquity_df,
+               aes(x = ExtractionDate,
+                   y = ..count.. * 2),
+               colour = "#F8766D") +
   scale_x_date(date_breaks = "month",
                date_labels = "%b %y") +
   scale_y_continuous(limits = c(0, 8),
-                     breaks = seq(0, 8)) +
-  labs(y = "Number of Samples") +
+                     breaks = seq(0, 8),
+                     sec.axis = sec_axis(~./2,
+                                         name = "MAG Density",
+                                         breaks = seq(0, 4, by = 0.5))) +
+  labs(x = "Time",
+       y = "Number of Samples") +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y.right = element_text(colour = "#F8766D"))
 
-p <- p1 + p2 / p3 +
+p <- ((p1 / p7) | (p2 / p3)) +
   plot_annotation(tag_levels = "A")
 
 ggsave("recurrence.pdf",

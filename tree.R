@@ -30,7 +30,7 @@ names(groupInfo) <- unique(sort(test$order))
 ar_tree <- groupOTU(ar_tree, groupInfo)
 
 ggtree1 <- ggtree(ar_tree, aes(colour = group), layout = "circular") +
-  geom_tiplab(size = 1.7, colour = "black", aes(angle = angle)) +
+  geom_tiplab(size = 1, colour = "black", aes(angle = angle)) +
   labs(colour = "Phylum") +
   scale_colour_manual(values = c("grey", "blue", "red", "green", "orange", "dark grey"),
                       labels = c("", sort(unique(test$order))[1:length(unique(test$order)) - 1], "Other"))

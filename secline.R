@@ -35,16 +35,16 @@ p_clust <- ggplot(time_series_df, aes(x = Sample,
   geom_line(aes(y = RPKM), colour = "#F8766D") +
   geom_errorbar(aes(ymax = RPKM + RPKMStDev,
                     ymin = RPKM - RPKMStDev),
-                alpha = 0.5,
-                colour = "Dark Gray") +
+                alpha = 0.2) +
   geom_line(aes(y = NucDiv * 1000), colour = "#00BFC4") +
   geom_errorbar(aes(ymax = (NucDiv + NucDivStDev) * 1000,
                     ymin = (NucDiv - NucDivStDev) * 1000),
-                alpha = 0.5,
-                colour = "Dark Gray") +
+                alpha = 0.2) +
   scale_x_date(date_breaks = "month",
                date_labels = "%b %y") +
   scale_y_continuous(name = "RPKM",
+                     limits = c(0, 65),
+                     breaks = seq(0, 60, by = 10),
                      sec.axis = sec_axis(~./1000,
                                          name = "Nucleotide Diversity")) +
   facet_wrap(~ Cluster,

@@ -111,10 +111,12 @@ max_df <- max_df %>%
   mutate(Tax = ifelse(AbundMax > 25, Tax, ""))
 
 p_max <- ggplot(max_df, aes(x = AbundMax,
-                            y = NucDivMax,
-                            colour = Recurrence,
-                            shape = Cluster)) +
-  geom_point() +
+                            y = NucDivMax)) +
+  stat_cor(method = "pearson",
+           label.x.npc = "centre",
+           label.y.npc = "bottom") +
+  geom_point(aes(colour = Recurrence,
+                 shape = Cluster)) +
   scale_y_log10() +
   scale_x_continuous(limits = c(0, 65),
                      breaks = seq(0, 60, by = 10)) +

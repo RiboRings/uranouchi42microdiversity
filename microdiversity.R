@@ -46,7 +46,10 @@ pm <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
        y = "Percentage of non-synonymous Mutations at Genome Level (%)",
        colour = "Recurrence",
        size = "Max RPKM") +
-  theme_classic()
+  theme_classic() +
+  stat_cor(method = "pearson",
+           label.x.npc = "centre",
+           label.y.npc = "top")
 
 ggsave("microdiversity.pdf",
        plot = pm,

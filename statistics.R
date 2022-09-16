@@ -21,7 +21,9 @@ stats_df <- stats_df %>%
   left_join(coding_density_df)
 
 p1 <- ggplot(stats_df, aes(x = length / 1000000)) +
-  geom_histogram(bins = 100) +
+  geom_histogram(bins = 100,
+                 colour = "black",
+                 fill = "white") +
   labs(x = "Genome Length (Mbp)",
        y = "Number of MAGs") +
   scale_x_continuous(limits = c(0, 8),
@@ -31,7 +33,9 @@ p1 <- ggplot(stats_df, aes(x = length / 1000000)) +
   theme_classic()
 
 p2 <- ggplot(stats_df, aes(x = contigs)) +
-  geom_histogram(bins = 100) +
+  geom_histogram(bins = 100,
+                 colour = "black",
+                 fill = "white") +
   scale_x_continuous(breaks = seq(0, 1000, by = 100)) +
   scale_y_continuous(limits = c(0, 60),
                      breaks = seq(0, 60, by = 10)) +
@@ -40,7 +44,9 @@ p2 <- ggplot(stats_df, aes(x = contigs)) +
   theme_classic()
 
 p3 <- ggplot(stats_df, aes(x = N50)) +
-  geom_histogram(bins = 100) +
+  geom_histogram(bins = 100,
+                 colour = "black",
+                 fill = "white") +
   scale_x_log10(labels = scales::number_format()) +
   labs(y = "Number of MAGs") +
   theme_classic()
