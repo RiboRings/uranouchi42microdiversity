@@ -15,19 +15,20 @@ nsf_array <- sapply(iter(nsf_df, by = "row"),
 tax_df <- filtered_df %>%
   transmute(Tax = paste(Phylum, Order, gsub("MAG ", "", ID), sep = ";"))
 
-microdiversity_df <- data.frame("genome" = filtered_df$genome, 
+microdiversity_df <- data.frame("genome" = filtered_df$genome,
                                 "DiSiperMbpAtAbundMax" = disi_array,
                                 "NonsynonimousFractionAtAbundMax" = nsf_array,
                                 "AbundMax" = filtered_df$AbundMax,
                                 "Recurrence" = filtered_df$Recurrence,
+                                "length" = filtered_df$length,
                                 "Tax" = tax_df$Tax) %>%
   filter(NonsynonimousFractionAtAbundMax != 0) %>%
   mutate(Tax = ifelse(NonsynonimousFractionAtAbundMax > 0.5 | DiSiperMbpAtAbundMax > 100000, Tax, ""))
 
 pm <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
-                                   y = NonsynonimousFractionAtAbundMax * 100,
-                                   colour = Recurrence,
-                                   size = AbundMax)) +
+                                    y = NonsynonimousFractionAtAbundMax * 100,
+                                    colour = Recurrence,
+                                    size = AbundMax)) +
   geom_point() +
   scale_x_continuous(limits = c(0, 150),
                      breaks = seq(0, 150, 25)) +
@@ -51,9 +52,40 @@ pm <- ggplot(microdiversity_df, aes(x = DiSiperMbpAtAbundMax / 1000,
            label.x.npc = "centre",
            label.y.npc = "top")
 
+pl <- ggplot(microdiversity_df, aes(x = length / 1000000,
+                                    y = NonsynonimousFractionAtAbundMax * 100,
+                                    colour = Recurrence,
+                                    size = AbundMax)) +
+  geom_point() +
+  scale_x_log10(labels = scales::number_format(),
+                breaks = c(1, 1.8, 3, 5, 8)) +
+  scale_y_continuous(limits = c(0, 100),
+                     breaks = seq(0, 100, by = 10)) +
+  scale_size_continuous(limits = c(0, 65),
+                        breaks = c(1, seq(20, 60, by = 20))) +
+  scale_colour_gradientn(colours = c("blue", "yellow", "red"),
+                         limits = c(1, 42),
+                         breaks = c(1, seq(10, 40, by = 10))) +
+  geom_text_repel(aes(label = Tax),
+                  size = 1.8,
+                  colour = "black",
+                  max.overlaps = 1000) +
+  labs(x = "Genome Length (Mbp)",
+       y = "Percentage of non-synonymous Mutations at Genome Level (%)",
+       colour = "Recurrence",
+       size = "Max RPKM") +
+  theme_classic() +
+  stat_cor(method = "pearson",
+           label.x.npc = "centre",
+           label.y.npc = "top")
+
+p <- (pm / pl) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = "A")
+
 ggsave("microdiversity.pdf",
-       plot = pm,
+       plot = p,
        device = "pdf",
        path = "results",
-       width = 10,
-       height = 7)
+       width = 15,
+       height = 15)

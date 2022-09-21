@@ -71,62 +71,8 @@ func_bubble <- func_annot_df %>%
                                                                 "Unclassified: signaling and cellular processes",
                                                                 "Unclassified: metabolism")))
 
-#func_mat <- func_annot_df %>%
-#  group_by(genome, level2_pathway_name) %>%
-#  summarise(NSF = mean(NSF, na.rm = TRUE)) %>%
-#  pivot_wider(names_from = level2_pathway_name,
-#              values_from = NSF,
-#              values_fill = NA) %>%
-#  inner_join(interesting_guys) %>%
-#  arrange(desc(NonsynonimousFractionAtAbundMax), DiSiperMbpAtAbundMax) %>%
-#  select(-NonsynonimousFractionAtAbundMax,
-#         -DiSiperMbpAtAbundMax,
-#         -AbundMax,
-#         -Recurrence,
-#         -Tax) %>%
-#  column_to_rownames(var = "genome") %>%
-#  as.matrix()
-#
-#func_mat <- func_mat[ , !(colnames(func_mat) %in% c("NA",
-#                                                    "Not included in regular maps",
-#                                                    "Poorly characterized",
-#                                                    "Aging",
-#                                                    "Immune system",
-#                                                    "Substance dependence",
-#                                                    "Cardiovascular disease",
-#                                                    "Neurodegenerative disease",
-#                                                    "Endocrine and metabolic disease",
-#                                                    "Nervous system",
-#                                                    "Endocrine system",
-#                                                    "Immune disease",
-#                                                    "Cancer: overview",
-#                                                    "Cancer: specific types",
-#                                                    "Infectious disease: parasitic",
-#                                                    "Infectious disease: viral",
-#                                                    "Cellular community - eukaryotes",
-#                                                    "Viral protein families",
-#                                                    "Information processing in viruses",
-#                                                    "Circulatory system",
-#                                                    "Excretory system",
-#                                                    "Digestive system",
-#                                                    "Development and regeneration",
-#                                                    "Unclassified: genetic information processing",
-#                                                    "Unclassified: signaling and cellular processes",
-#                                                    "Unclassified: metabolism"))]
-
-#raw_gene_mat <- as.data.frame(func_mat) %>%
-#  rownames_to_column(var = "genome")
 write_csv(func_bubble, "data/raw_gene_mat.csv")
-# raw_gene_mat <- read_csv("data/raw_gene_mat.csv")
-# func_mat <- raw_gene_mat %>%
-#   column_to_rownames(var = "genome") %>%
-#   as.matrix()
-
-#func_bubble <- raw_gene_mat %>%
-#  pivot_longer(cols = -genome,
-#               names_to = "FunctionalCategory",
-#               values_to = "NonsynonymousFraction") %>%
-#  left_join(microdiversity_df)
+#func_bubble <- read_csv("data/raw_gene_mat.csv")
 
 func_bubble$Group <- ""
 func_bubble$Group[func_bubble$DiSiperMbpAtAbundMax > 100000] <- "Number of Divergent Sites per Kbp > 100"
@@ -160,12 +106,14 @@ min_nsf <- min(func_bubble$NonsynonimousFractionAtAbundMax)
 pf <- ggplot(func_bubble, aes(x = NonsynonymousFraction * 100,
                               y = reorder(FunctionalCategory, NonsynonymousFraction, median, na.rm = TRUE))) +
   geom_boxplot() +
+  geom_vline(aes(xintercept = median(NonsynonymousFraction))) +
   scale_x_continuous(limits = c(0, 100),
                      breaks = seq(0, 100, by = 10)) +
   labs(x = "Percentage of non-synonymous Mutations at Gene Level (%)",
        y = "Functional Category",
        colour = "Groups") +
-  theme_classic()
+  theme_classic() +
+  theme(axis.text.y = element_text(angle = 45))
 
 ggsave("func_annot_overview.pdf",
        plot = pf,
@@ -197,7 +145,7 @@ po <- ggplot(subset(func_bubble, Group != ""), aes(x = reorder(FunctionalCategor
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.position = "bottom")
 
-p <- (pm / po) +
+p <- (pf / po) +
   plot_annotation(tag_levels = "A")
 
 ggsave("microfunc.pdf",
@@ -206,44 +154,3 @@ ggsave("microfunc.pdf",
        path = "results",
        width = 15,
        height = 15)
-
-#clean_func_mat <- remove_problematic_combs(func_mat)
-#
-#interesting_guys <- interesting_guys %>%
-#  filter(genome %in% rownames(clean_func_mat))
-#
-#ha_row <- rowAnnotation(`Divergent Sites per Kbp` = anno_barplot(interesting_guys$DiSiperMbpAtAbundMax / 1000),
-#                        `Max RPKM` = anno_barplot(interesting_guys$AbundMax),
-#                        annotation_name_rot = 90,
-#                        annotation_name_gp = gpar(fontsize = 8))
-#
-#clean_func_mat <- clean_func_mat[ , order(colMedians(clean_func_mat, na.rm = TRUE))]
-#ha_col <- columnAnnotation(Distribution = anno_boxplot(clean_func_mat),
-#                           annotation_name_gp = gpar(fontsize = 8))
-#
-#fun_color_range <- colorRampPalette(c("#1b98e0", "red"))
-#my_colors <- fun_color_range(101)
-#col_fun <- colorRamp2(breaks = seq(0, 1, by = 0.01), colors = my_colors)
-#
-#pdf("results/func_hm.pdf",
-#    width = 10,
-#    height = 15)
-#
-#draw(Heatmap(clean_func_mat,
-#             name = "Mean NSF",
-#             heatmap_legend_param = list(at = seq(0, 1, by = 0.1)),
-#             col = col_fun,
-#             na_col = "grey",
-#             row_title = "MAG",
-#             column_title = "Functional Category",
-#             show_row_names = FALSE,
-#             cluster_rows = FALSE,
-#             cluster_columns = FALSE,
-#             column_names_gp = gpar(fontsize = 8),
-#             column_names_rot = 45,
-#             right_annotation = ha_row,
-#             top_annotation = ha_col,
-#             width = ncol(mat) * unit(4, "mm"), 
-#             height = nrow(mat) * unit(0.18, "mm")))
-#
-#dev.off()
